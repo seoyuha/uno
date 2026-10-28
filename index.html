@@ -184,6 +184,9 @@ input::placeholder{color:#7F8BB0}
 
 .mybar{min-width:0;padding:4px 0 10px}
 .actions{display:flex;justify-content:center;gap:10px;padding:0 10px 6px;flex-wrap:wrap}
+.btn.catch,.btn.pulse,.pchip .tag.miss{animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.07)}}
+.pchip .tag.miss{background:#fff;color:var(--tomato)}
 .btn.uno.armed{background:var(--gold);color:var(--night);box-shadow:0 0 0 4px rgba(255,197,49,.35)}
 .hand{overflow-x:auto;overflow-y:visible;padding:18px 12px 6px;scrollbar-width:thin}
 .hand-in{display:flex;width:max-content;margin:0 auto;align-items:flex-end}
@@ -434,6 +437,7 @@ input::placeholder{color:#7F8BB0}
         <button class="btn" id="btnDraw">카드 뽑기</button>
         <button class="btn" id="btnPass">넘기기</button>
         <button class="btn red uno" id="btnUno">UNO!</button>
+        <button class="btn gold catch hidden" id="btnCatch">잡았다!</button>
       </div>
       <div class="hand" id="hand"><div class="hand-in" id="handIn"></div></div>
     </div>
@@ -523,6 +527,7 @@ function norm(g) {
   g.order.forEach(p => { g.hands[p] = A(g.hands[p]); });
   g.names = g.names || {};
   if (g.drawn === undefined) g.drawn = null;
+  if (g.unoMiss === undefined) g.unoMiss = null;
   return g;
 }
 const nm = (g, p) => (g.names && g.names[p]) || '친구';
@@ -590,6 +595,7 @@ function applyPlay(g, me, code, idx, chosen, saidUno) {
   if (!canPlay(code, g)) return false;
   if (isWild(code) && code !== 'WQ' && !FOODS[chosen]) return false;
 
+  g.unoMiss = null;              // 앞 친구를 잡을 기회는 다음 카드가 나가면 끝나요
   hand.splice(i, 1);
   g.discard.push(code);
   const n = g.order.length;
@@ -608,7 +614,7 @@ function applyPlay(g, me, code, idx, chosen, saidUno) {
   let tail = '', unoK = false;
   if (hand.length === 1) {
     if (saidUno) { tail = ' · UNO!'; unoK = true; }
-    else { drawN(g, me, 2); tail = ' · UNO를 안 외쳐서 +2장'; }
+    else { g.unoMiss = me; tail = ' · UNO를 안 외쳤어요! 잡을 수 있어요'; }
   }
 
   const sym = symOf(code);
@@ -640,6 +646,7 @@ function applyPlay(g, me, code, idx, chosen, saidUno) {
 
 function applyDraw(g, me) {
   if (g.over || g.order[g.turn] !== me || g.drawn === me) return false;
+  g.unoMiss = null;
   const got = drawN(g, me, 1);
   const hand = g.hands[me];
   const name = nm(g, me);
@@ -657,6 +664,7 @@ function applyDraw(g, me) {
 
 function applyPass(g, me) {
   if (g.over || g.order[g.turn] !== me || g.drawn !== me) return false;
+  g.unoMiss = null;
   g.msg = `${nm(g, me)}: 차례를 넘겨요`;
   advance(g, 1);
   g.seq = (g.seq || 0) + 1;
@@ -666,6 +674,7 @@ function applyPass(g, me) {
 
 function applyHostSkip(g) {
   if (g.over) return false;
+  g.unoMiss = null;
   const cur = g.order[g.turn];
   if (g.drawn !== cur) drawN(g, cur, 1);
   g.msg = `방장이 ${nm(g, cur)} 차례를 넘겼어요`;
@@ -678,6 +687,7 @@ function applyHostSkip(g) {
 function applyLeave(g, me) {
   const i = g.order.indexOf(me);
   if (i < 0 || g.over) return;
+  if (g.unoMiss === me) g.unoMiss = null;
   g.deck = A(g.hands[me]).concat(g.deck);
   delete g.hands[me];
   g.order.splice(i, 1);
@@ -698,6 +708,27 @@ function applyLeave(g, me) {
   g.msg = `${nm(g, me)} 님이 나갔어요`;
   g.seq = (g.seq || 0) + 1;
   g.fx = { k: 'draw', text: g.msg, by: null, card: null };
+}
+
+// UNO를 안 외친 친구를 잡기: 먼저 누른 친구만 성공, 잡힌 친구는 2장
+function unoMissOf(g) {
+  const t = g && !g.over && g.unoMiss;
+  return t && g.hands[t] && g.hands[t].length === 1 ? t : null;
+}
+function applyCatch(g, me) {
+  const t = unoMissOf(g);
+  if (!t || t === me || g.order.indexOf(me) < 0) return false;
+  drawN(g, t, 2);
+  g.unoMiss = null;
+  setFx(g, 'catch', `${nm(g, me)} 잡았다! ${nm(g, t)} +2장`, me, null);
+  return true;
+}
+// 잡히기 전에 스스로 UNO!를 외치면 괜찮아요
+function applyLateUno(g, me) {
+  if (unoMissOf(g) !== me) return false;
+  g.unoMiss = null;
+  setFx(g, 'uno', `${nm(g, me)}: UNO! (잡히기 전에 외쳤어요)`, me, null);
+  return true;
 }
 
 function ranking(g) {
@@ -745,7 +776,8 @@ function rulesHTML() {
     <li>3~5명이 한 방에서 해요. 처음에 카드를 ${HAND}장씩 받아요.</li>
     <li>가운데 카드와 <b>같은 음식</b>이나 <b>같은 숫자</b>를 한 장 내요.</li>
     <li>낼 카드가 없으면 카드를 1장 뽑아요. 뽑은 카드를 낼 수 있으면 내고, 아니면 넘겨요.</li>
-    <li>카드가 2장 남았을 때, 카드를 내기 <b>전에</b> UNO! 버튼을 눌러요. 안 누르면 2장을 더 받아요.</li>
+    <li>카드가 2장 남았을 때, 카드를 내기 <b>전에</b> UNO! 버튼을 눌러요.</li>
+    <li>깜빡한 친구가 보이면 <b>잡았다!</b>를 눌러요. 가장 먼저 누르면 그 친구가 2장을 받아요. 잡히기 전에 스스로 UNO!를 누르면 괜찮아요. 다음 친구가 카드를 내거나 뽑으면 기회가 끝나요.</li>
     <li>카드를 가장 먼저 모두 내면 1등! 나머지는 남은 카드가 적은 순서로 등수가 정해져요.</li>
   </ul>
   <h2 style="font-size:20px;margin-bottom:10px">특별 카드</h2>
@@ -852,7 +884,13 @@ function bindUI() {
   $('deck').onclick = () => { if ($('deck').classList.contains('can')) doDraw(); };
   $('btnPass').onclick = doPass;
   $('quizCancel').onclick = quizClose;
+  $('btnCatch').onclick = () => {
+    gtx(g => applyCatch(g, PID)).then(res => {
+      if (res && !res.committed) snack('이미 누군가 잡았거나, 친구가 먼저 UNO!를 외쳤어요.');
+    });
+  };
   $('btnUno').onclick = () => {
+    if (room && room.game && room.game.unoMiss === PID) { gtx(g => applyLateUno(g, PID)); return; }
     unoArmed = !unoArmed;
     $('btnUno').classList.toggle('armed', unoArmed);
     $('btnUno').textContent = unoArmed ? 'UNO! ✓' : 'UNO!';
@@ -1179,6 +1217,7 @@ function renderGame(r) {
   const g = norm(r.game);
   const n = g.order.length, cur = g.order[g.turn];
   const myTurn = !g.over && cur === PID;
+  const miss = unoMissOf(g);
   const hand = g.hands[PID] || [];
   const isHost = r.host === PID;
 
@@ -1189,7 +1228,7 @@ function renderGame(r) {
     const pl = (r.players || {})[p];
     const off = !pl || pl.online === false;
     return `<div class="pchip ${p === cur && !g.over ? 'cur' : ''} ${off ? 'off' : ''} ${p === PID ? 'isme' : ''}">
-      ${p === cur && !g.over ? '<span class="tag">차례</span>' : ''}${cnt === 1 ? '<span class="tag uno">UNO</span>' : ''}
+      ${p === cur && !g.over ? '<span class="tag">차례</span>' : ''}${cnt === 1 ? (p === miss ? '<span class="tag uno miss">UNO 안 함!</span>' : '<span class="tag uno">UNO</span>') : ''}
       <div class="pn">${esc(nm(g, p))}${p === PID ? ' (나)' : ''}</div>
       <div class="pc"><span class="mb"></span>${cnt}장${off ? ' · 연결 끊김' : ''}</div></div>`;
   }).join(`<span class="arrow" aria-hidden="true">${g.dir === 1 ? '›' : '‹'}</span>`);
@@ -1237,11 +1276,16 @@ function renderGame(r) {
   // 버튼
   $('btnDraw').classList.toggle('hidden', !canDraw);
   $('btnPass').classList.toggle('hidden', !(myTurn && g.drawn === PID));
-  const unoShow = myTurn && hand.length === 2;
-  if (!unoShow) unoArmed = false;
+  const lateMe = miss === PID;
+  const unoShow = (myTurn && hand.length === 2) || lateMe;
+  if (!unoShow || lateMe) unoArmed = false;
   $('btnUno').classList.toggle('hidden', !unoShow);
   $('btnUno').classList.toggle('armed', unoArmed);
-  $('btnUno').textContent = unoArmed ? 'UNO! ✓' : 'UNO!';
+  $('btnUno').classList.toggle('pulse', lateMe);
+  $('btnUno').textContent = lateMe ? 'UNO! 지금 외치기' : (unoArmed ? 'UNO! ✓' : 'UNO!');
+  const canCatch = !!miss && miss !== PID && g.order.indexOf(PID) >= 0;
+  $('btnCatch').classList.toggle('hidden', !canCatch);
+  if (canCatch) $('btnCatch').textContent = `잡았다! ${nm(g, miss)} UNO 안 했어요`;
   updateHostSkip();
 
   // 효과
@@ -1659,7 +1703,7 @@ function roomCard(rid, r, D) {
     const crown = ended && g.winner === p ? '🥇 ' : '';
     return `<li class="${p === cur ? 'cur' : ''} ${off ? 'off' : ''}">
       <button class="tname ${T.sel === p ? 'sel' : ''}" data-act="sel" data-p="${p}">${p === cur ? '▶ ' : ''}${crown}${esc(nameOf(p, v))}</button>
-      <span class="tcnt">${cnt}${off ? (cnt ? ' · ' : '') + '끊김' : ''}</span></li>`;
+      <span class="tcnt">${cnt}${g && playing && unoMissOf(g) === p ? ' · UNO 안 함' : ''}${off ? (cnt ? ' · ' : '') + '끊김' : ''}</span></li>`;
   }).join('');
   let msg = '', warn = false, btns = '';
   const selFrom = T.sel ? D.where[T.sel] : null;

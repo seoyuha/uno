@@ -977,6 +977,8 @@ function enterRoom(rid) {
 }
 
 function exitRoomView() {
+  // 선생님이 방을 닫거나 모둠에서 뺀 뒤, 나중에 연결이 끊겨도 빈 기록이 다시 생기지 않게
+  if (curRoom && db) db.ref(`${roomPath(curRoom)}/players/${PID}`).onDisconnect().cancel().catch(() => {});
   if (roomRef) roomRef.off();
   roomRef = null; curRoom = null; room = null;
   ss.del('yu_room');
@@ -1446,6 +1448,7 @@ function renderClassWait() {
 }
 
 function leaveClassView() {
+  if (curClass && db) db.ref(`${classPath(curClass)}/students/${PID}/online`).onDisconnect().cancel().catch(() => {});
   if (classRef) classRef.off('value', onClass);
   classRef = null; curClass = null; cls = null; lastExitKey = null;
   ss.del('yu_class');

@@ -1411,7 +1411,8 @@ function classPresence() {
 function markOnline() {
   if (!curClass) return;
   db.ref(`${classPath(curClass)}/students/${PID}`).transaction(v => {
-    if (!v || !v.name) return;          // 명단에서 빠졌으면 다시 만들지 않는다
+    if (v === null) return null;        // 처음 빈 값으로 불릴 때는 취소하지 않고 서버 값을 기다린다
+    if (!v.name) return;                // 명단에서 빠졌으면 다시 만들지 않는다
     v.online = true; return v;
   }).catch(() => {});
 }
@@ -1867,18 +1868,20 @@ async function tKick() {
 }
 
 /* ---------- 모둠 진행 ---------- */
-function tStart(rid, quiet) {
-  return db.ref(`${ROOT}/rooms/${rid}`).transaction(r => {
-    if (!r || isPlaying(r)) return;
-    const ps = activePlayers(r).filter(([, p]) => p.online !== false);
-    if (ps.length < MINP) return;
-    r.status = 'playing';
-    r.game = newGame(ps.slice(0, MAXP).map(([id, p]) => ({ id, name: p.name })));
-    return r;
-  }).then(res => {
-    if (!res.committed && !quiet) snack(`${(T.rooms[rid] || {}).name || '모둠'}: 접속한 학생이 3명 이상이어야 시작해요.`);
-    return res.committed;
-  }).catch(e => { dbErr(e); return false; });
+// 실제 Firebase는 transaction을 처음에 빈 값(null)으로 한 번 부를 때가 있어
+// 시작이 취소되는 일이 있었다. 현황판이 이미 받아 둔 최신 방 정보로 바로 시작한다.
+async function tStart(rid, quiet) {
+  const r = T.rooms[rid];
+  const label = (r && r.name) || '모둠';
+  if (!r) return false;
+  if (isPlaying(r)) { if (!quiet) snack(`${label}은 이미 게임 중이에요.`); return false; }
+  const ps = activePlayers(r).filter(([, p]) => p.online !== false);
+  if (ps.length < MINP) { if (!quiet) snack(`${label}: 접속한 학생이 3명 이상이어야 시작해요.`); return false; }
+  const g = newGame(ps.slice(0, MAXP).map(([id, p]) => ({ id, name: p.name })));
+  try {
+    await db.ref(`${ROOT}/rooms/${rid}`).update({ status: 'playing', game: g });
+    return true;
+  } catch (e) { dbErr(e); return false; }
 }
 async function tStartAll() {
   const ids = tData().rooms.filter(([, r]) => !isPlaying(r) && !isEnded(r)).map(([rid]) => rid);

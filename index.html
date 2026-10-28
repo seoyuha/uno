@@ -399,7 +399,7 @@ input::placeholder{color:#7F8BB0}
   <div class="wrap">
     <div class="whead"><h1 id="cwTitle"></h1><button class="btn ghost sm" id="btnLeaveC">나가기</button></div>
     <div class="cwbox"><div class="cwemo" aria-hidden="true">🍽️</div>
-      <p class="cwbig">선생님이 모둠을 정해 주실 때까지 기다려요</p><p class="cwsub" id="cwSub"></p></div>
+      <p class="cwbig" id="cwBig">선생님이 모둠을 정해 주실 때까지 기다려요</p><p class="cwsub" id="cwSub"></p></div>
     <div class="block"><h2>함께 들어온 친구들 <span class="pill" id="cwCount"></span></h2><div class="chips" id="cwList"></div></div>
     <p style="text-align:center;margin-top:18px"><button class="linkbtn" data-rules>게임 방법 보기</button></p>
   </div>
@@ -1022,7 +1022,7 @@ function exitRoomView() {
   ss.del('yu_room');
   ['endOv', 'chooser'].forEach(id => $(id).classList.add('hidden'));
   pending = null; quizClose();
-  if (curClass) { lastExitKey = ptrKey(); renderClassWait(); } else show('lobby');
+  if (curClass) renderClassWait(); else show('lobby');
 }
 
 function registerPresence(status) {
@@ -1041,6 +1041,12 @@ function registerPresence(status) {
 function onRoom(snap) {
   if (leaving) return;
   const r = snap.val();
+  if (curClass && (!r || !r.players || !r.players[PID])) {
+    // 반 모드: 들어갈 방은 선생님 배정이 정한다. 방 정보가 이 기기에 아직 안 왔을 수 있으니 기다린다
+    const me = cls && cls.students && cls.students[PID];
+    if (me && me.room === curRoom) { if (r) room = r; renderClassWait(true); return; }
+    exitRoomView(); return;
+  }
   if (!r) {
     if (room) snack('방이 없어졌어요.');
     exitRoomView(); return;
@@ -1048,7 +1054,7 @@ function onRoom(snap) {
   room = r;
   const ps = r.players || {};
   if (!ps[PID] || !ps[PID].name) {
-    if (r.classCode) { exitRoomView(); return; }   // 선생님이 모둠에서 뺐거나 옮김
+    if (r.classCode) { exitRoomView(); return; }
     if (r.status === 'waiting') joinRoom(curRoom, true);
     else { snack('이 방의 게임에 참여하고 있지 않아요.'); exitRoomView(); }
     return;
@@ -1387,7 +1393,7 @@ function leaveRoom() {
   }).catch(dbErr).finally(() => {
     leaving = false;
     if (curClass) db.ref(`${classPath(curClass)}/students/${PID}/room`).set(null).catch(() => {});
-    exitRoomView();
+    if (curRoom) exitRoomView();
   });
 }
 
@@ -1399,7 +1405,7 @@ function leaveRoom() {
 let curClass = null, classRef = null, cls = null, lastExitKey = null;
 const classPath = c => `${ROOT}/classes/${c}`;
 const clsSet = () => (cls && cls.settings) || {};
-function selfStartOK(r) { return !r || !r.classCode || clsSet().selfStart !== false; }
+function selfStartOK(r) { return !r || !r.classCode || clsSet().selfStart === true; }
 function quizOn() { return !curClass || clsSet().quiz !== false; }
 function bump(k) {
   if (!curClass || !db) return;
@@ -1453,12 +1459,10 @@ function classPresence() {
   db.ref(`${classPath(curClass)}/students/${PID}/online`).onDisconnect().set(false).catch(() => {});
 }
 function markOnline() {
-  if (!curClass) return;
-  db.ref(`${classPath(curClass)}/students/${PID}`).transaction(v => {
-    if (v === null) return null;        // 처음 빈 값으로 불릴 때는 취소하지 않고 서버 값을 기다린다
-    if (!v.name) return;                // 명단에서 빠졌으면 다시 만들지 않는다
-    v.online = true; return v;
-  }).catch(() => {});
+  // transaction은 처음에 빈 값으로 먼저 실행되며 내 기록이 잠깐 사라진 것처럼 보일 수 있어 쓰지 않는다
+  const me = curClass && cls && cls.students && cls.students[PID];
+  if (!me || !me.name) return;
+  db.ref(`${classPath(curClass)}/students/${PID}/online`).set(true).catch(() => {});
 }
 
 function onClass(snap) {
@@ -1471,16 +1475,21 @@ function onClass(snap) {
   const me = (c.students || {})[PID];
   if (!me || !me.name) { snack('선생님이 반 명단에서 뺐어요.'); leaveClassView(); return; }
   if (me.online === false && connected) markOnline();
-  if (me.room && ptrKey() !== lastExitKey && curRoom !== me.room) { enterRoom(me.room); return; }
+  if ((me.room || null) !== (curRoom || null)) {
+    if (me.room) enterRoom(me.room);   // 배정됨 / 다른 모둠으로 옮겨짐
+    else exitRoomView();               // 모둠에서 빠짐 / 모둠이 닫힘
+    return;
+  }
   if (!curRoom) { renderClassWait(); return; }
   // 설정(학생 방장 시작 허용 등)이 바뀌면 지금 화면에 반영
   if (room && (room.status === 'waiting' || !room.game)) renderWait(room);
   else if (room && room.game && room.game.over) renderEnd(room, norm(room.game));
 }
 
-function renderClassWait() {
+function renderClassWait(moving) {
   if (!curClass) return;
   show('classwait');
+  $('cwBig').textContent = moving ? '모둠 방으로 들어가는 중이에요…' : '선생님이 모둠을 정해 주실 때까지 기다려요';
   ['endOv', 'chooser'].forEach(id => $(id).classList.add('hidden'));
   $('cwTitle').textContent = `반 코드 ${curClass}`;
   const list = Object.entries((cls && cls.students) || {}).filter(([, s]) => s && s.name)
@@ -1560,7 +1569,7 @@ async function createClass() {
     }
     await withTimeout(db.ref(classPath(code)).set({
       createdAt: firebase.database.ServerValue.TIMESTAMP,
-      settings: { size: 4, selfStart: true, quiz: true }
+      settings: { size: 4, selfStart: false, quiz: true }
     }), 9000);
     cleanOldClasses(code);
     openDash(code);
@@ -1652,7 +1661,7 @@ function renderDash() {
   <div class="tset">
     <div class="seg" role="group" aria-label="모둠 인원"><span>모둠 인원</span>${[3, 4, 5].map(n =>
       `<button class="${n === size ? 'on' : ''}" data-act="size" data-n="${n}">${n}명</button>`).join('')}</div>
-    <label class="tog"><input type="checkbox" data-act="selfStart" ${set.selfStart !== false ? 'checked' : ''}> 학생 방장이 시작·한 판 더 누를 수 있어요</label>
+    <label class="tog"><input type="checkbox" data-act="selfStart" ${set.selfStart === true ? 'checked' : ''}> 학생 방장이 시작·한 판 더 누를 수 있어요</label>
     <label class="tog"><input type="checkbox" data-act="quiz" ${set.quiz !== false ? 'checked' : ''}> 카드 낼 때 영어 문제 내기</label>
   </div>`;
 

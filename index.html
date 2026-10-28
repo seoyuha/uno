@@ -27,6 +27,7 @@ const firebaseConfig = {
   appId: "1:871006987422:web:278025ccf9bbc3403b878f"
 };
 const ROOT = "yummyUno";   // 데이터베이스 안에서 이 게임이 쓰는 폴더 이름
+const TEACHER_PIN = "1234"; // ② 선생님 모드 비밀번호 — 꼭 바꿔 주세요
 </script>
 <style>
 :root{
@@ -117,11 +118,12 @@ input::placeholder{color:#7F8BB0}
 /* ---------- waiting ---------- */
 .whead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 18px}
 .whead h1{font-size:30px}
-.seats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.seats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+@media(max-width:520px){.seats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .seat{aspect-ratio:3/4;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;padding:6px;background:rgba(0,0,0,.2);border:2px dashed rgba(255,255,255,.18);font-size:14px;color:var(--mute)}
 .seat.full{border:3px solid #fff;background:var(--paper);color:var(--night)}
-.seat .sn{font-family:var(--display);font-size:clamp(14px,3.6vw,20px);word-break:keep-all;line-height:1.15}
+.seat .sn{font-family:var(--display);font-size:clamp(14px,3.6vw,20px);word-break:keep-all;overflow-wrap:anywhere;line-height:1.15;max-width:100%}
 .seat .si{font-size:24px;line-height:1.2}
 .seat.me{box-shadow:0 0 0 4px var(--gold)}
 .winfo{text-align:center;color:var(--mute);margin:16px 0 12px}
@@ -165,7 +167,8 @@ input::placeholder{color:#7F8BB0}
 .deck.can{cursor:pointer}
 .deck.can .card{box-shadow:0 0 0 4px var(--gold),0 10px 22px rgba(0,0,0,.45)}
 .deck .cnt{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:13px;color:var(--mute)}
-.deck::before{content:"";position:absolute;inset:0;transform:translate(5px,5px);border-radius:10px;background:#0E1630;border:3px solid #fff;opacity:.6}
+.pile .card{position:relative;z-index:1}
+.deck::before{content:"";position:absolute;inset:0;z-index:0;transform:translate(5px,5px);border-radius:10px;background:#0E1630;border:3px solid #fff;opacity:.6}
 .food-now{
   display:flex;flex-direction:column;align-items:center;gap:2px;min-width:clamp(86px,16vw,132px);
   padding:12px 10px;border-radius:18px;background:var(--fc,#555);color:#fff;text-align:center;
@@ -179,7 +182,7 @@ input::placeholder{color:#7F8BB0}
 .status.mine{color:var(--gold)}
 .msg{color:var(--mute);font-size:14px;text-align:center;min-height:1.4em}
 
-.me{min-width:0;padding:4px 0 10px}
+.mybar{min-width:0;padding:4px 0 10px}
 .actions{display:flex;justify-content:center;gap:10px;padding:0 10px 6px;flex-wrap:wrap}
 .btn.uno.armed{background:var(--gold);color:var(--night);box-shadow:0 0 0 4px rgba(255,197,49,.35)}
 .hand{overflow-x:auto;overflow-y:visible;padding:18px 12px 6px;scrollbar-width:thin}
@@ -252,6 +255,73 @@ input::placeholder{color:#7F8BB0}
   .table{flex-direction:row;gap:18px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* English quiz gate */
+.quiz-sheet{border:3px solid #ffc531;background:linear-gradient(155deg,#263b76,#172449)}
+.quiz-head{font-family:var(--display);color:#ffc531;font-size:17px;margin-bottom:12px}
+.quiz-question{font-family:var(--display);font-size:clamp(23px,5vw,32px);margin:12px 0 18px;line-height:1.4}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.quiz-choice{border:2px solid #8398ce;background:#fffdf7;color:#172449;border-radius:16px;min-height:66px;padding:12px;font-weight:700;cursor:pointer;font-size:17px}
+.quiz-choice:focus-visible{outline:4px solid #ffc531}
+.quiz-choice.wrong{border-color:#e8473c;background:#f6d4d1;color:#8a2a22;text-decoration:line-through;cursor:not-allowed}
+.quiz-feedback{min-height:30px;text-align:center;font-family:var(--display);font-size:19px;margin-top:14px}
+@media(max-width:420px){.quiz-options{grid-template-columns:1fr}}
+/* ---------- 반 코드 / 선생님 모드 ---------- */
+.hint{color:var(--mute);font-size:14px;margin:-4px 0 10px}
+.classjoin{padding:16px;border-radius:18px;background:rgba(255,197,49,.1);box-shadow:inset 0 0 0 2px rgba(255,197,49,.35)}
+.classjoin h2{color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.1);font-size:15px}
+.chip.me{background:var(--gold);color:var(--night);font-weight:700}
+.chip.off{opacity:.45}
+.cwbox{text-align:center;padding:28px 16px;border-radius:20px;background:rgba(255,255,255,.06);margin:8px 0 6px}
+.cwemo{font-size:52px;line-height:1;animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.cwbig{font-family:var(--display);font-size:clamp(22px,5vw,30px);margin:12px 0 4px}
+.cwsub{color:var(--mute);margin:0}
+.twrap{max-width:1280px;margin:0 auto;padding:16px 16px 48px}
+.tbox{max-width:520px;margin:40px auto;text-align:center}
+.tbox .row{margin-top:14px}
+.tbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:14px 18px;border-radius:18px;background:rgba(255,255,255,.07)}
+.tlabel{font-size:13px;color:var(--mute)}
+.tcode{font-family:var(--display);font-size:56px;line-height:1;color:var(--gold);letter-spacing:4px}
+.tinfo{flex:1;min-width:220px;color:#DCE2F5;font-size:15px}
+.tbtns{display:flex;flex-wrap:wrap;gap:8px}
+.tset{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:12px 0}
+.seg{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.22);padding:4px;border-radius:999px}
+.seg span{padding:0 8px 0 10px;font-size:14px;color:var(--mute)}
+.seg button{border:0;background:none;color:var(--paper);padding:6px 12px;border-radius:999px;cursor:pointer;font-family:var(--display);font-size:15px}
+.seg button.on{background:var(--gold);color:var(--night)}
+.tog{display:inline-flex;align-items:center;gap:8px;font-size:15px;cursor:pointer}
+.tog input{width:20px;height:20px;accent-color:var(--gold)}
+.selbar{position:sticky;top:8px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 14px;border-radius:14px;background:var(--paper);color:var(--night);box-shadow:0 8px 20px rgba(0,0,0,.35);margin:10px 0}
+.selbar span{flex:1;min-width:200px}
+.selbar .btn.ghost{color:var(--night);box-shadow:inset 0 0 0 2px rgba(27,42,78,.3)}
+.tsec{margin-top:18px}
+.tsech{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.tsech h2{font-size:22px}
+.tsech small,.muted{color:var(--mute);font-size:14px;font-family:var(--body)}
+.warn,.tmsg.warn{color:#FF8A7E}
+.tchip{border:0;cursor:pointer;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.12);font-size:15px}
+.tchip.off,.tlist li.off .tname{opacity:.5}
+.tchip.sel,.tname.sel{background:var(--gold)!important;color:var(--night)!important;font-weight:700;opacity:1!important}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.tcard{border-radius:16px;background:rgba(255,255,255,.06);padding:12px 14px;box-shadow:inset 0 4px 0 var(--gold);display:flex;flex-direction:column;gap:8px}
+.tcard.playing{box-shadow:inset 0 4px 0 var(--tomato)}
+.tcard.ended{box-shadow:inset 0 4px 0 var(--mute)}
+.tch{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px}
+.tch b{font-family:var(--display);font-weight:400;font-size:20px}
+.tlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.tlist li{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tlist li.cur .tname{color:var(--gold)}
+.tname{border:0;background:rgba(255,255,255,.06);cursor:pointer;padding:5px 10px;border-radius:10px;font-size:15px;text-align:left;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcnt{font-size:13px;color:var(--mute);white-space:nowrap}
+.tmsg{font-size:13px;color:var(--mute);min-height:1.3em}
+.tact{display:flex;flex-wrap:wrap;gap:6px}
+.ttable{width:100%;border-collapse:collapse;font-size:15px}
+.ttable th,.ttable td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1)}
+.ttable th{color:var(--mute);font-weight:400;font-size:13px}
+.ttable .n{text-align:right;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -287,8 +357,16 @@ input::placeholder{color:#7F8BB0}
       <label class="lbl" for="inName">내 이름</label>
       <input type="text" id="inName" maxlength="10" placeholder="예: 7번 김하늘" autocomplete="off">
     </div>
+    <div class="block classjoin">
+      <h2>반 코드로 들어가기</h2>
+      <p class="hint">선생님이 알려 준 숫자 4개를 써요. 모둠은 선생님이 정해 줘요.</p>
+      <div class="row">
+        <input type="text" id="inClass" inputmode="numeric" maxlength="4" placeholder="예: 4827" autocomplete="off">
+        <button class="btn gold" id="btnClassJoin">들어가기</button>
+      </div>
+    </div>
     <div class="block">
-      <h2>새 방 만들기</h2>
+      <h2>자유롭게 방 만들기</h2>
       <div class="row">
         <input type="text" id="inRoom" maxlength="14" placeholder="예: 1모둠" autocomplete="off">
         <button class="btn gold" id="btnCreate">방 만들기</button>
@@ -298,7 +376,7 @@ input::placeholder{color:#7F8BB0}
       <div class="listhead"><h2>방 목록</h2><span class="conn" id="conn">연결하는 중</span></div>
       <div class="rooms" id="roomList"><div class="empty">방 목록을 불러오는 중이에요</div></div>
     </div>
-    <p style="text-align:center;margin-top:18px"><button class="linkbtn" data-rules>게임 방법 보기</button></p>
+    <p style="text-align:center;margin-top:18px"><button class="linkbtn" data-rules>게임 방법 보기</button> · <button class="linkbtn" id="btnTeacher">선생님 모드</button></p>
   </div>
 </section>
 
@@ -312,6 +390,20 @@ input::placeholder{color:#7F8BB0}
     <div class="block rules" id="rulesInline"></div>
   </div>
 </section>
+
+<!-- 반 대기실 -->
+<section id="scr-classwait" class="screen">
+  <div class="wrap">
+    <div class="whead"><h1 id="cwTitle"></h1><button class="btn ghost sm" id="btnLeaveC">나가기</button></div>
+    <div class="cwbox"><div class="cwemo" aria-hidden="true">🍽️</div>
+      <p class="cwbig">선생님이 모둠을 정해 주실 때까지 기다려요</p><p class="cwsub" id="cwSub"></p></div>
+    <div class="block"><h2>함께 들어온 친구들 <span class="pill" id="cwCount"></span></h2><div class="chips" id="cwList"></div></div>
+    <p style="text-align:center;margin-top:18px"><button class="linkbtn" data-rules>게임 방법 보기</button></p>
+  </div>
+</section>
+
+<!-- 선생님 모드 -->
+<section id="scr-teacher" class="screen"><div class="twrap" id="tMain"></div></section>
 
 <!-- 게임 -->
 <section id="scr-game" class="screen">
@@ -337,7 +429,7 @@ input::placeholder{color:#7F8BB0}
         <div style="text-align:center"><button class="btn ghost sm hostskip hidden" id="btnHostSkip"></button></div>
       </div>
     </div>
-    <div class="me">
+    <div class="mybar">
       <div class="actions">
         <button class="btn" id="btnDraw">카드 뽑기</button>
         <button class="btn" id="btnPass">넘기기</button>
@@ -368,6 +460,12 @@ input::placeholder{color:#7F8BB0}
   <div class="sheet rules"><div id="rulesBody"></div><button class="btn gold" id="btnRulesClose" style="width:100%;margin-top:14px">알겠어요</button></div>
 </div>
 
+<div class="ov hidden" id="quizOv" role="dialog" aria-modal="true" aria-labelledby="quizQuestion">
+ <div class="sheet quiz-sheet"><div class="quiz-head">📚 영어 문제를 맞히면 카드를 사용할 수 있어요!</div>
+ <div class="quiz-question" id="quizQuestion"></div><div class="quiz-options" id="quizOptions"></div>
+ <div class="quiz-feedback" id="quizFeedback" aria-live="polite"></div>
+ <button class="btn ghost sm" id="quizCancel" style="width:100%;margin-top:12px">취소</button></div>
+</div>
 <div id="fx"></div>
 <div id="snack"></div>
 
@@ -662,7 +760,7 @@ let leaving = false, busy = false, unoArmed = false, lastSeq = null, lastPres = 
 let connected = false;
 
 function show(name) {
-  ['setup', 'lobby', 'wait', 'game'].forEach(s => $('scr-' + s).classList.toggle('on', s === name));
+  ['setup', 'lobby', 'wait', 'game', 'classwait', 'teacher'].forEach(s => $('scr-' + s).classList.toggle('on', s === name));
 }
 let snackT;
 function snack(t) {
@@ -689,6 +787,7 @@ function boot() {
   $('inName').value = ls.get('yu_name') || '';
   $('inName').addEventListener('input', () => ls.set('yu_name', myName()));
   bindUI();
+  classInitUI();
 
   const cfg = typeof firebaseConfig === 'object' ? firebaseConfig : {};
   if (typeof firebase === 'undefined') {
@@ -714,9 +813,10 @@ function boot() {
     const c = $('conn');
     c.textContent = connected ? '연결됨' : '연결하는 중';
     c.className = 'conn' + (connected ? ' ok' : '');
+    if (connected && curClass) { classPresence(); markOnline(); }
     if (connected && curRoom && room) {
       lastPres = null;
-      if (room.status === 'waiting') joinRoom(curRoom, true);
+      if (room.status === 'waiting' && !room.classCode) joinRoom(curRoom, true);
       else registerPresence(room.status);
     }
   });
@@ -729,8 +829,11 @@ function boot() {
 
   db.ref(`${ROOT}/rooms`).on('value', s => renderLobby(s.val() || {}), dbErr);
 
-  const saved = ss.get('yu_room');
-  if (saved) enterRoom(saved); else show('lobby');
+  const saved = ss.get('yu_room'), savedClass = ss.get('yu_class');
+  if (/[?&]teacher\b/.test(location.search) || ss.get('yu_tmode')) teacherOpen();
+  else if (savedClass) enterClass(savedClass);
+  else if (saved) enterRoom(saved);
+  else show('lobby');
   setInterval(tick, 4000);
 }
 
@@ -748,6 +851,7 @@ function bindUI() {
   $('btnDraw').onclick = doDraw;
   $('deck').onclick = () => { if ($('deck').classList.contains('can')) doDraw(); };
   $('btnPass').onclick = doPass;
+  $('quizCancel').onclick = quizClose;
   $('btnUno').onclick = () => {
     unoArmed = !unoArmed;
     $('btnUno').classList.toggle('armed', unoArmed);
@@ -769,7 +873,7 @@ function bindUI() {
   $('rulesOv').onclick = e => { if (e.target.id === 'rulesOv') $('rulesOv').classList.add('hidden'); };
   window.addEventListener('resize', fitHand);
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { $('rulesOv').classList.add('hidden'); $('chooser').classList.add('hidden'); pending = null; }
+    if (e.key === 'Escape') { $('rulesOv').classList.add('hidden'); $('chooser').classList.add('hidden'); pending = null; quizClose(); }
   });
 }
 
@@ -785,12 +889,12 @@ function renderLobby(rooms) {
     Object.entries(rooms).forEach(([id, r]) => {
       const ps = Object.values((r && r.players) || {}).filter(p => p && p.name);
       const age = now - ((r && r.createdAt) || 0);
-      if ((!ps.length && age > 30000) || age > 4 * 3600 * 1000 || !r || !r.name) db.ref(roomPath(id)).remove().catch(() => {});
+      if ((!ps.length && age > 30000 && !(r && r.classCode)) || age > 4 * 3600 * 1000 || !r || !r.name) db.ref(roomPath(id)).remove().catch(() => {});
     });
   }
 
   const el = $('roomList');
-  const shown = list.filter(([, r]) => Object.values(r.players || {}).some(p => p && p.name));
+  const shown = list.filter(([, r]) => Object.values(r.players || {}).some(p => p && p.name) && (!r.classCode || (r.players && r.players[PID])));
   if (!shown.length) { el.innerHTML = '<div class="empty">아직 방이 없어요. 위에서 방을 만들어 보세요.</div>'; return; }
   el.innerHTML = shown.map(([id, r]) => {
     const ps = Object.entries(r.players || {}).filter(([, p]) => p && p.name)
@@ -877,12 +981,13 @@ function exitRoomView() {
   roomRef = null; curRoom = null; room = null;
   ss.del('yu_room');
   ['endOv', 'chooser'].forEach(id => $(id).classList.add('hidden'));
-  show('lobby');
+  pending = null; quizClose();
+  if (curClass) { lastExitKey = ptrKey(); renderClassWait(); } else show('lobby');
 }
 
 function registerPresence(status) {
   if (!curRoom) return;
-  const mode = status === 'waiting' ? 'w' : 'p';
+  const mode = status === 'waiting' && !(room && room.classCode) ? 'w' : 'p';
   if (lastPres === mode) return;
   lastPres = mode;
   const pref = db.ref(`${roomPath(curRoom)}/players/${PID}`);
@@ -903,6 +1008,7 @@ function onRoom(snap) {
   room = r;
   const ps = r.players || {};
   if (!ps[PID] || !ps[PID].name) {
+    if (r.classCode) { exitRoomView(); return; }   // 선생님이 모둠에서 뺐거나 옮김
     if (r.status === 'waiting') joinRoom(curRoom, true);
     else { snack('이 방의 게임에 참여하고 있지 않아요.'); exitRoomView(); }
     return;
@@ -939,15 +1045,17 @@ function renderWait(r) {
   $('seats').innerHTML = seats;
   const n = ps.length;
   let info;
+  const canStart = isHost && selfStartOK(r);
   if (n < MINP) info = `${MINP - n}명이 더 오면 시작할 수 있어요.`;
-  else info = isHost ? '모두 모였으면 게임 시작을 누르세요.' : '방장이 게임을 시작하기를 기다려요.';
+  else if (r.classCode && !selfStartOK(r)) info = '선생님이 게임을 시작하면 바로 시작돼요.';
+  else info = canStart ? '모두 모였으면 게임 시작을 누르세요. (선생님도 시작할 수 있어요)' : r.classCode ? '방장이나 선생님이 게임을 시작해요.' : '방장이 게임을 시작하기를 기다려요.';
   $('winfo').textContent = info;
-  $('btnStart').classList.toggle('hidden', !isHost);
+  $('btnStart').classList.toggle('hidden', !canStart);
   $('btnStart').disabled = n < MINP || n > MAXP;
 }
 
 function startGame() {
-  if (!room || room.host !== PID) return;
+  if (!room || room.host !== PID || !selfStartOK(room)) return;
   const ps = activePlayers(room).filter(([, p]) => p.online !== false);
   if (ps.length < MINP) { snack('3명 이상 있어야 시작할 수 있어요.'); return; }
   const g = newGame(ps.slice(0, MAXP).map(([id, p]) => ({ id, name: p.name })));
@@ -970,14 +1078,68 @@ function gtx(fn) {
 function afterMove(res) {
   if (res && res.committed && res.snapshot.exists() && res.snapshot.val().over) {
     roomRef.child('status').set('ended').catch(() => {});
+    const g = res.snapshot.val();
+    if (room && room.classCode && g.endReason === 'win') recordGame(room.classCode, A(g.order), g.winner);
   }
 }
+
+/* 퀴즈 문항: 향후 CSV/엑셀 업로드로 교체할 수 있는 데이터 구조 */
+const QUIZ_BANK = [
+ {q:'What would you like to have?',a:['I’d like to have spaghetti.','I am eleven.','It is Monday.','I go by bus.'],correct:0},
+ {q:'"비빔밥"을 영어로 쓰면?',a:['Bibimbap','Steak','Juice','Spaghetti'],correct:0},
+ {q:'How does the lemon taste?',a:['It is sweet.','It is sour.','It is salty.','It is spicy.'],correct:1},
+ {q:'"저는 스테이크를 먹고 싶어요."',a:['I like Mondays.','I have a pencil.','I’d like to have steak.','I can swim.'],correct:2},
+ {q:'Choose the correct sentence.',a:['What you would like?','What would you like to have?','What like would you?','You would what like?'],correct:1},
+ {q:'"주스"를 뜻하는 영어 단어는?',a:['Soup','Salad','Rice','Juice'],correct:3},
+ {q:'The chili is very ____.',a:['spicy','cold','tall','fast'],correct:0},
+ {q:'"It is delicious."의 뜻은?',a:['매워요.','맛있어요.','비싸요.','차가워요.'],correct:1},
+ {q:'What would you like to drink?',a:['I’d like some juice.','I am happy.','Take a bus.','It is red.'],correct:0},
+ {q:'Which food is usually sweet?',a:['Salt','Pepper','Ice cream','Chili'],correct:2},
+ {q:'"스파게티"의 영어 철자는?',a:['Spagetti','Spaghetti','Spagheti','Spagety'],correct:1},
+ {q:'How does the candy taste?',a:['It is salty.','It is bitter.','It is sour.','It is sweet.'],correct:3}
+];
+let quizPending=null, quizLocked=false;
+let quizLast=-1;
+function quizGate(action){
+ if(quizPending || busy) return;
+ if(!quizOn()){ action(); return; }   // 선생님이 영어 문제를 꺼 두었을 때
+ quizPending=action; quizLocked=false;
+ let qi=Math.floor(Math.random()*QUIZ_BANK.length);
+ if(QUIZ_BANK.length>1 && qi===quizLast) qi=(qi+1)%QUIZ_BANK.length; // 같은 문제 연속 방지
+ quizLast=qi;
+ const item=QUIZ_BANK[qi];
+ $('quizQuestion').textContent=item.q;
+ $('quizFeedback').textContent='정답을 선택하세요.';
+ $('quizOptions').innerHTML='';
+ const opts=shuffle(item.a.map((answer,i)=>({answer,i}))); // 보기 순서 섞기 (정답이 늘 1번에 오지 않게)
+ opts.forEach(({answer,i},pos)=>{
+  const b=document.createElement('button'); b.className='quiz-choice';b.textContent=(pos+1)+'. '+answer;
+  b.onclick=()=>{
+   if(quizLocked) return;
+   if(i!==item.correct){$('quizFeedback').textContent='다시 생각해 보세요!';b.classList.add('wrong');b.disabled=true;bump('wrong');return;}
+   quizLocked=true;bump('correct');$('quizFeedback').textContent='정답! 카드를 사용합니다.';
+   $('quizOv').classList.add('hidden');
+   const go=quizPending;quizPending=null;go();
+  };
+  $('quizOptions').appendChild(b);
+ });
+ $('quizOv').classList.remove('hidden');
+ $('quizOptions').querySelector('button').focus();
+}
+function quizClose(){quizPending=null;quizLocked=false;$('quizOv').classList.add('hidden');}
+
 function doPlay(code, idx, food) {
+  quizGate(() => commitPlay(code, idx, food));
+}
+function commitPlay(code, idx, food) {
   const said = unoArmed;
   unoArmed = false;
-  gtx(g => applyPlay(g, PID, code, idx, food, said)).then(afterMove);
+  gtx(g => applyPlay(g, PID, code, idx, food, said)).then(res => {
+    if (res && !res.committed) snack('카드를 낼 수 없었어요. 다시 해 보세요.');
+    afterMove(res);
+  });
 }
-function doDraw() { gtx(g => applyDraw(g, PID)); }
+function doDraw() { quizGate(() => gtx(g => applyDraw(g, PID))); }
 function doPass() { gtx(g => applyPass(g, PID)); }
 function hostSkip() {
   if (!room || room.host !== PID) return;
@@ -1064,6 +1226,12 @@ function renderGame(r) {
   }).join('');
   fitHand();
 
+  // 내 차례가 끝났으면(방장이 넘김, 게임 끝 등) 열려 있던 퀴즈·음식 고르기 창을 닫는다
+  if (!myTurn) {
+    if (quizPending) { quizClose(); snack('차례가 넘어가서 문제 창을 닫았어요.'); }
+    if (pending) { pending = null; $('chooser').classList.add('hidden'); }
+  }
+
   // 버튼
   $('btnDraw').classList.toggle('hidden', !canDraw);
   $('btnPass').classList.toggle('hidden', !(myTurn && g.drawn === PID));
@@ -1106,7 +1274,7 @@ function updateHostSkip() {
   b.classList.toggle('hidden', !showIt);
   if (showIt) b.textContent = `방장: ${(g.names || {})[cur] || '친구'} 차례 넘기기`;
 }
-function tick() { updateHostSkip(); }
+function tick() { updateHostSkip(); if (T.code && T.cls) tRender(); }
 
 let fxT;
 function showFx(fx) {
@@ -1131,11 +1299,11 @@ function renderEnd(r, g) {
     big = `${esc(nm(g, g.winner))} 승리!`;
     sub = myRank >= 0 ? `나는 ${myRank + 1}등이에요. 다음 판에 다시 도전해요!` : '';
   }
-  const isHost = r.host === PID;
+  const isHost = r.host === PID && selfStartOK(r);
   $('endSheet').innerHTML = `<div class="endbig">${big}</div><p class="endsub">${sub}</p>
     <ol class="rank">${rk.map((p, i) => `<li class="${p === PID ? 'me' : ''}"><span class="rk">${medal[i] || (i + 1) + '등'}</span>
       <span class="rnm">${esc(nm(g, p))}</span><span class="rc">${i === 0 && g.endReason === 'win' ? '카드 0장' : `남은 카드 ${g.hands[p].length}장`}</span></li>`).join('')}</ol>
-    ${isHost ? '' : '<p class="endsub">방장이 “한 판 더”를 누르면 대기실로 돌아가요.</p>'}
+    ${isHost ? '' : `<p class="endsub">${r.classCode ? '선생님이 다음 판을 열어 줄 거예요.' : '방장이 “한 판 더”를 누르면 대기실로 돌아가요.'}</p>`}
     <div class="btnrow">${isHost ? '<button class="btn gold" id="btnAgain">한 판 더</button>' : ''}<button class="btn ghost" id="btnEndLeave">나가기</button></div>`;
   $('endOv').classList.remove('hidden');
   if (isHost) $('btnAgain').onclick = playAgain;
@@ -1143,9 +1311,10 @@ function renderEnd(r, g) {
 }
 
 function playAgain() {
-  if (!room || room.host !== PID) return;
+  if (!room || room.host !== PID || !selfStartOK(room)) return;
   const up = { status: 'waiting', game: null };
-  Object.entries(room.players || {}).forEach(([p, v]) => { if (!v || !v.name || v.online === false) up['players/' + p] = null; });
+  // 반 모드에서는 잠깐 끊긴 친구도 모둠에 남겨 둔다 (선생님이 관리)
+  if (!room.classCode) Object.entries(room.players || {}).forEach(([p, v]) => { if (!v || !v.name || v.online === false) up['players/' + p] = null; });
   roomRef.update(up).catch(dbErr);
 }
 
@@ -1169,7 +1338,660 @@ function leaveRoom() {
     if (!left.length) return null;
     if (r.host === PID) r.host = left.sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0))[0][0];
     return r;
-  }).catch(dbErr).finally(() => { leaving = false; exitRoomView(); });
+  }).catch(dbErr).finally(() => {
+    leaving = false;
+    if (curClass) db.ref(`${classPath(curClass)}/students/${PID}/room`).set(null).catch(() => {});
+    exitRoomView();
+  });
+}
+
+/* ================================================================
+   반(수업) 모드 — 학생 쪽
+   선생님이 만든 반 코드로 들어와 기다리면, 선생님이 모둠을 정해 줄 때
+   저절로 모둠 방으로 이동한다.
+   ================================================================ */
+let curClass = null, classRef = null, cls = null, lastExitKey = null;
+const classPath = c => `${ROOT}/classes/${c}`;
+const clsSet = () => (cls && cls.settings) || {};
+function selfStartOK(r) { return !r || !r.classCode || clsSet().selfStart !== false; }
+function quizOn() { return !curClass || clsSet().quiz !== false; }
+function bump(k) {
+  if (!curClass || !db) return;
+  db.ref(`${classPath(curClass)}/stats/${PID}/${k}`).transaction(n => (n || 0) + 1).catch(() => {});
+}
+function recordGame(code, order, winner) {
+  order.forEach(p => db.ref(`${classPath(code)}/stats/${p}/plays`).transaction(n => (n || 0) + 1).catch(() => {}));
+  if (winner) db.ref(`${classPath(code)}/stats/${winner}/wins`).transaction(n => (n || 0) + 1).catch(() => {});
+}
+function ptrKey() {
+  const me = cls && cls.students && cls.students[PID];
+  return me && me.room ? me.room + '|' + (me.assignedAt || 0) : null;
+}
+
+async function joinClass() {
+  const name = myName();
+  if (!name) { snack('먼저 내 이름을 써 주세요.'); $('inName').focus(); return; }
+  const code = ($('inClass').value || '').replace(/\D/g, '');
+  if (code.length !== 4) { snack('반 코드는 숫자 4개예요.'); $('inClass').focus(); return; }
+  if (!db) return;
+  $('btnClassJoin').disabled = true;
+  try {
+    const s = await withTimeout(db.ref(classPath(code) + '/createdAt').once('value'), 9000);
+    if (!s.exists()) { snack('그런 반 코드가 없어요. 선생님께 다시 물어봐요.'); return; }
+    await db.ref(`${classPath(code)}/students/${PID}`).transaction(v => {
+      v = v || { joinedAt: Date.now() };
+      v.name = name; v.online = true;
+      return v;
+    });
+    db.ref(`${classPath(code)}/stats/${PID}/name`).set(name).catch(() => {});
+    $('inClass').value = '';
+    enterClass(code);
+  } catch (e) {
+    if (e.message === 'TIMEOUT') snack('서버가 답하지 않아요. 인터넷 연결을 확인하세요.');
+    else dbErr(e);
+  } finally {
+    $('btnClassJoin').disabled = false;
+  }
+}
+
+function enterClass(code) {
+  if (classRef) classRef.off('value', onClass);
+  curClass = code; cls = null; lastExitKey = null;
+  ss.set('yu_class', code);
+  classRef = db.ref(classPath(code));
+  classRef.on('value', onClass, dbErr);
+  classPresence();
+}
+function classPresence() {
+  if (!curClass || !db) return;
+  db.ref(`${classPath(curClass)}/students/${PID}/online`).onDisconnect().set(false).catch(() => {});
+}
+function markOnline() {
+  if (!curClass) return;
+  db.ref(`${classPath(curClass)}/students/${PID}`).transaction(v => {
+    if (!v || !v.name) return;          // 명단에서 빠졌으면 다시 만들지 않는다
+    v.online = true; return v;
+  }).catch(() => {});
+}
+
+function onClass(snap) {
+  const c = snap.val();
+  if (!c) {
+    snack(cls ? '수업이 끝났어요. 수고했어요!' : '그런 반 코드가 없어요.');
+    leaveClassView(); return;
+  }
+  cls = c;
+  const me = (c.students || {})[PID];
+  if (!me || !me.name) { snack('선생님이 반 명단에서 뺐어요.'); leaveClassView(); return; }
+  if (me.online === false && connected) markOnline();
+  if (me.room && ptrKey() !== lastExitKey && curRoom !== me.room) { enterRoom(me.room); return; }
+  if (!curRoom) { renderClassWait(); return; }
+  // 설정(학생 방장 시작 허용 등)이 바뀌면 지금 화면에 반영
+  if (room && (room.status === 'waiting' || !room.game)) renderWait(room);
+  else if (room && room.game && room.game.over) renderEnd(room, norm(room.game));
+}
+
+function renderClassWait() {
+  if (!curClass) return;
+  show('classwait');
+  ['endOv', 'chooser'].forEach(id => $(id).classList.add('hidden'));
+  $('cwTitle').textContent = `반 코드 ${curClass}`;
+  const list = Object.entries((cls && cls.students) || {}).filter(([, s]) => s && s.name)
+    .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
+  const me = cls && cls.students && cls.students[PID];
+  $('cwSub').textContent = `${me ? me.name + ' · ' : ''}모둠이 정해지면 저절로 모둠 방으로 이동해요.`;
+  $('cwCount').textContent = `${list.length}명`;
+  $('cwList').innerHTML = list.map(([id, s]) =>
+    `<span class="chip ${id === PID ? 'me' : ''} ${s.online === false ? 'off' : ''}">${esc(s.name)}</span>`).join('');
+}
+
+function leaveClassView() {
+  if (classRef) classRef.off('value', onClass);
+  classRef = null; curClass = null; cls = null; lastExitKey = null;
+  ss.del('yu_class');
+  if (curRoom) exitRoomView(); else show('lobby');
+}
+function leaveClass() {
+  const code = curClass;
+  if (!code) { show('lobby'); return; }
+  const r = db.ref(`${classPath(code)}/students/${PID}`);
+  r.child('online').onDisconnect().cancel().catch(() => {});
+  leaveClassView();
+  r.remove().catch(() => {});
+}
+
+/* ================================================================
+   선생님 모드 — 현황판, 자동 배정, 모둠 관리, 기록
+   ================================================================ */
+const T = { code: null, cref: null, rref: null, ccb: null, rcb: null, cls: null, rooms: {}, loaded: false,
+  preview: null, pvSel: null, sel: null, view: 'rooms' };
+let tRaf = 0;
+function tRender() {
+  if (tRaf) return;
+  tRaf = requestAnimationFrame(() => { tRaf = 0; renderDash(); });
+}
+function tMain(html) { $('tMain').innerHTML = html; }
+
+function teacherOpen() {
+  if (!db) return;
+  ss.set('yu_tmode', '1');
+  show('teacher');
+  if (ss.get('yu_tok') !== '1') { tLoginView(); return; }
+  const saved = ls.get('yu_tclass');
+  if (saved) openDash(saved, true); else tStartView();
+}
+function tExit() {
+  ss.del('yu_tmode');
+  tDetach();
+  show('lobby');
+}
+function tLoginView() {
+  tMain(`<div class="tbox">
+    <h1 class="title" style="font-size:44px">선생님 모드</h1>
+    <p class="lead">선생님 비밀번호를 넣어 주세요.</p>
+    <div class="row"><input type="password" id="tPin" inputmode="numeric" placeholder="비밀번호" autocomplete="off"><button class="btn gold" data-act="pin">확인</button></div>
+    <p style="margin-top:18px"><button class="linkbtn" data-act="exit">학생 화면으로</button></p></div>`);
+  setTimeout(() => $('tPin') && $('tPin').focus(), 50);
+}
+function tStartView() {
+  tMain(`<div class="tbox">
+    <h1 class="title" style="font-size:44px">선생님 모드</h1>
+    <p class="lead">새 수업을 만들면 반 코드(숫자 4개)가 생겨요. 학생들은 첫 화면에서 그 코드를 넣고 들어와요.</p>
+    <div style="margin-top:20px"><button class="btn gold big" data-act="newclass">새 수업 만들기</button></div>
+    <div class="block" style="text-align:left"><label class="lbl" for="tOpenCode">이미 만든 반 코드 열기</label>
+      <div class="row"><input type="text" id="tOpenCode" inputmode="numeric" maxlength="4" placeholder="예: 4827" autocomplete="off"><button class="btn" data-act="opencode">열기</button></div></div>
+    <p style="margin-top:18px"><button class="linkbtn" data-act="exit">학생 화면으로</button></p></div>`);
+}
+
+async function createClass() {
+  try {
+    let code, tries = 0, taken = true;
+    while (taken && tries < 10) {
+      code = String(1000 + Math.floor(Math.random() * 9000)); tries++;
+      taken = (await withTimeout(db.ref(classPath(code) + '/createdAt').once('value'), 9000)).exists();
+    }
+    await withTimeout(db.ref(classPath(code)).set({
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      settings: { size: 4, selfStart: true, quiz: true }
+    }), 9000);
+    cleanOldClasses(code);
+    openDash(code);
+  } catch (e) {
+    if (e.message === 'TIMEOUT') snack('서버가 답하지 않아요. firebaseConfig의 databaseURL을 확인하세요.');
+    else dbErr(e);
+  }
+}
+async function cleanOldClasses(keep) {
+  try {
+    const all = (await db.ref(`${ROOT}/classes`).once('value')).val() || {};
+    Object.entries(all).forEach(([c, v]) => {
+      if (c !== keep && (!v || Date.now() - (v.createdAt || 0) > 12 * 3600 * 1000)) db.ref(classPath(c)).remove().catch(() => {});
+    });
+  } catch (e) {}
+}
+
+function tDetach() {
+  if (T.cref && T.ccb) T.cref.off('value', T.ccb);
+  if (T.rref && T.rcb) T.rref.off('value', T.rcb);
+  Object.assign(T, { code: null, cref: null, rref: null, ccb: null, rcb: null, cls: null, rooms: {}, loaded: false, preview: null, pvSel: null, sel: null });
+}
+function openDash(code, silent) {
+  tDetach();
+  T.code = code;
+  ls.set('yu_tclass', code);
+  tMain('<div class="tbox"><p class="lead">수업을 불러오는 중이에요…</p></div>');
+  T.cref = db.ref(classPath(code));
+  T.ccb = s => {
+    T.cls = s.val();
+    if (!T.cls) {
+      if (!silent || T.loaded) snack('이 반 코드의 수업이 없어요.');
+      ls.set('yu_tclass', '');
+      tDetach(); tStartView(); return;
+    }
+    T.loaded = true; tRender();
+  };
+  T.cref.on('value', T.ccb, dbErr);
+  T.rref = db.ref(`${ROOT}/rooms`);
+  T.rcb = s => {
+    const all = s.val() || {};
+    T.rooms = {};
+    Object.entries(all).forEach(([id, r]) => { if (r && r.classCode === code) T.rooms[id] = r; });
+    tRender();
+  };
+  T.rref.on('value', T.rcb, dbErr);
+}
+
+/* ---------- 데이터 정리 ---------- */
+function tData() {
+  const c = T.cls || {}, st = c.students || {}, stats = c.stats || {};
+  const rooms = Object.entries(T.rooms)
+    .sort((a, b) => (a[1].no || 0) - (b[1].no || 0) || (a[1].createdAt || 0) - (b[1].createdAt || 0));
+  const where = {};
+  rooms.forEach(([rid, r]) => Object.entries(r.players || {}).forEach(([p, v]) => { if (v && v.name) where[p] = rid; }));
+  const students = Object.entries(st).filter(([, s]) => s && s.name)
+    .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
+  const free = students.filter(([p]) => !where[p]);
+  const name = p => (st[p] && st[p].name) || (stats[p] && stats[p].name) || '친구';
+  return { c, st, stats, rooms, where, students, free, name, set: c.settings || {} };
+}
+const isPlaying = r => !!(r && r.status === 'playing' && r.game && !r.game.over);
+const isEnded = r => !!(r && (r.status === 'ended' || (r.game && r.game.over)));
+
+function splitGroups(list, size) {
+  const n = list.length;
+  if (n < MINP) return null;
+  const k = Math.min(Math.floor(n / MINP), Math.max(Math.ceil(n / MAXP), Math.round(n / size)));
+  const a = shuffle(list.slice());
+  const gs = Array.from({ length: k }, () => []);
+  a.forEach((p, i) => gs[i % k].push(p));
+  return gs;
+}
+
+/* ---------- 그리기 ---------- */
+function renderDash() {
+  if (!T.code || !T.cls || !$('scr-teacher').classList.contains('on')) return;
+  const D = tData(), set = D.set, size = set.size || 4;
+  const online = D.students.filter(([, s]) => s.online !== false).length;
+  let h = `<div class="tbar">
+    <div><div class="tlabel">반 코드</div><div class="tcode">${T.code}</div></div>
+    <div class="tinfo">학생들은 첫 화면에서 <b>반 코드</b>를 넣고 들어와요.<br>참여 ${D.students.length}명 · 접속 중 ${online}명 · 모둠 ${D.rooms.length}개</div>
+    <div class="tbtns">
+      <button class="btn ghost sm" data-act="view">${T.view === 'stats' ? '모둠 보기' : '학생별 기록'}</button>
+      <button class="btn ghost sm" data-act="csv">기록 내려받기</button>
+      <button class="btn red sm" data-act="endclass">수업 끝내기</button>
+      <button class="btn ghost sm" data-act="exit">닫기</button>
+    </div></div>
+  <div class="tset">
+    <div class="seg" role="group" aria-label="모둠 인원"><span>모둠 인원</span>${[3, 4, 5].map(n =>
+      `<button class="${n === size ? 'on' : ''}" data-act="size" data-n="${n}">${n}명</button>`).join('')}</div>
+    <label class="tog"><input type="checkbox" data-act="selfStart" ${set.selfStart !== false ? 'checked' : ''}> 학생 방장이 시작·한 판 더 누를 수 있어요</label>
+    <label class="tog"><input type="checkbox" data-act="quiz" ${set.quiz !== false ? 'checked' : ''}> 카드 낼 때 영어 문제 내기</label>
+  </div>`;
+
+  if (T.preview) { tMain(h + previewHTML(D)); return; }
+
+  if (T.sel) {
+    const inRoom = D.where[T.sel];
+    h += `<div class="selbar"><span><b>${esc(D.name(T.sel))}</b> 선택됨 · 옮길 모둠의 <b>여기로</b>를 누르세요</span>
+      ${inRoom ? '<button class="btn sm" data-act="unassign">모둠에서 빼기</button>' : ''}
+      <button class="btn red sm" data-act="kick">반에서 내보내기</button>
+      <button class="btn ghost sm" data-act="unsel">취소</button></div>`;
+  }
+
+  if (T.view === 'stats') { tMain(h + statsHTML(D)); return; }
+
+  h += `<div class="tsec"><div class="tsech"><h2>모둠 없는 학생 <small>${D.free.length}명</small></h2>
+    <div class="tbtns">
+      <button class="btn gold sm" data-act="auto">${D.rooms.length ? '자동 배정 (전체 다시)' : '자동 배정'}</button>
+      ${D.rooms.length && D.free.length ? '<button class="btn sm" data-act="fill">남은 학생 넣기</button>' : ''}
+      <button class="btn ghost sm" data-act="newroom">빈 모둠 만들기</button>
+    </div></div>
+    <div class="chips">${!D.students.length
+      ? `<span class="muted">아직 들어온 학생이 없어요. 칠판에 반 코드 <b>${T.code}</b>를 보여 주세요.</span>`
+      : D.free.length ? D.free.map(([p, s]) => `<button class="tchip ${T.sel === p ? 'sel' : ''} ${s.online === false ? 'off' : ''}" data-act="sel" data-p="${p}">${esc(s.name)}${s.online === false ? ' · 끊김' : ''}</button>`).join('')
+      : '<span class="muted">모든 학생이 모둠에 들어가 있어요.</span>'}</div></div>`;
+
+  const waitN = D.rooms.filter(([, r]) => !isPlaying(r) && !isEnded(r)).length;
+  const endN = D.rooms.filter(([, r]) => isEnded(r)).length;
+  h += `<div class="tsec"><div class="tsech"><h2>모둠 <small>${D.rooms.length}개</small></h2><div class="tbtns">
+      ${waitN ? '<button class="btn gold sm" data-act="startall">대기 중인 모둠 모두 시작</button>' : ''}
+      ${endN ? '<button class="btn sm" data-act="againall">끝난 모둠 모두 대기실로</button>' : ''}</div></div>
+    <div class="tgrid">${D.rooms.map(([rid, r]) => roomCard(rid, r, D)).join('') ||
+      '<div class="empty">아직 모둠이 없어요. 학생들이 들어오면 <b>자동 배정</b>을 눌러요.</div>'}</div></div>`;
+  tMain(h);
+}
+
+function roomCard(rid, r, D) {
+  const g = r.game ? norm(JSON.parse(JSON.stringify(r.game))) : null;
+  const playing = isPlaying(r), ended = !playing && isEnded(r) && !!g;
+  const ps = activePlayers(r);
+  const onlineN = ps.filter(([, p]) => p.online !== false).length;
+  const cur = playing ? g.order[g.turn] : null;
+  const rows = (playing || ended) ? g.order.map(p => [p, (r.players || {})[p]]) : ps;
+  const nameOf = (p, v) => (D.st[p] && D.st[p].name) || (v && v.name) || (g && g.names && g.names[p]) || '친구';
+  const list = rows.map(([p, v]) => {
+    const off = !v || v.online === false;
+    const cnt = g && (playing || ended) && g.hands[p] ? `${g.hands[p].length}장` : '';
+    const crown = ended && g.winner === p ? '🥇 ' : '';
+    return `<li class="${p === cur ? 'cur' : ''} ${off ? 'off' : ''}">
+      <button class="tname ${T.sel === p ? 'sel' : ''}" data-act="sel" data-p="${p}">${p === cur ? '▶ ' : ''}${crown}${esc(nameOf(p, v))}</button>
+      <span class="tcnt">${cnt}${off ? (cnt ? ' · ' : '') + '끊김' : ''}</span></li>`;
+  }).join('');
+  let msg = '', warn = false, btns = '';
+  const selFrom = T.sel ? D.where[T.sel] : null;
+  const canHere = T.sel && selFrom !== rid && !playing && !ended && ps.length < MAXP;
+  if (playing) {
+    const stuck = Date.now() - (g.turnAt || Date.now()) > 45000;
+    warn = stuck || !(r.players || {})[cur] || (r.players[cur] || {}).online === false;
+    msg = warn ? `${esc(nameOf(cur))} 차례에서 멈춰 있어요` : esc(g.msg || '');
+    btns = `<button class="btn sm" data-act="skip" data-r="${rid}">차례 넘기기</button>
+      <button class="btn ghost sm" data-act="again" data-r="${rid}">대기실로</button>`;
+  } else if (ended) {
+    msg = g.endReason === 'win' ? `${esc(nameOf(g.winner))} 승리!` : '게임이 끝났어요';
+    btns = `<button class="btn gold sm" data-act="start" data-r="${rid}" ${onlineN < MINP ? 'disabled' : ''}>바로 한 판 더</button>
+      <button class="btn ghost sm" data-act="again" data-r="${rid}">대기실로</button>`;
+  } else {
+    msg = `${ps.length}명 · ${onlineN < MINP ? '접속한 학생이 3명 이상이어야 시작해요' : '시작할 수 있어요'}`;
+    btns = `<button class="btn gold sm" data-act="start" data-r="${rid}" ${onlineN < MINP ? 'disabled' : ''}>게임 시작</button>`;
+  }
+  if (canHere) btns = `<button class="btn gold sm" data-act="move" data-r="${rid}">여기로</button>` + btns;
+  btns += `<button class="btn ghost sm" data-act="close" data-r="${rid}">닫기</button>`;
+  const st = playing ? '게임 중' : ended ? '게임 끝' : '대기 중';
+  return `<div class="tcard ${playing ? 'playing' : ended ? 'ended' : 'waiting'}">
+    <div class="tch"><b>${esc(r.name || '모둠')}</b><span class="pill">${st}${playing ? ` · 남은 카드 ${g.deck.length}` : ''}</span></div>
+    <ul class="tlist">${list || '<li class="muted">학생 없음</li>'}</ul>
+    <div class="tmsg ${warn ? 'warn' : ''}">${msg}</div>
+    <div class="tact">${btns}</div></div>`;
+}
+
+function previewHTML(D) {
+  const P = T.preview;
+  const bad = P.groups.some(g => g.length < MINP || g.length > MAXP);
+  return `<div class="tsec"><div class="tsech"><h2>자동 배정 미리 보기 <small>${P.groups.length}모둠 · ${P.groups.reduce((s, g) => s + g.length, 0)}명</small></h2>
+    <div class="tbtns"><button class="btn sm" data-act="reshuffle">다시 섞기</button>
+      <button class="btn ghost sm" data-act="pvcancel">취소</button>
+      <button class="btn gold sm" data-act="pvok" ${bad ? 'disabled' : ''}>이대로 모둠 만들기</button></div></div>
+    <p class="muted">학생 이름을 누르고 다른 모둠의 <b>여기로</b>를 누르면 옮길 수 있어요.
+      ${bad ? '<b class="warn">모둠마다 3~5명이어야 해요.</b>' : ''}
+      ${P.skipped ? `연결이 끊긴 학생 ${P.skipped}명은 빠졌어요.` : ''}
+      ${P.replace ? '확정하면 지금 있는 모둠은 모두 닫히고 새로 만들어져요.' : ''}</p>
+    <div class="tgrid">${P.groups.map((g, gi) => `<div class="tcard waiting">
+      <div class="tch"><b>${gi + 1}모둠</b><span class="pill">${g.length}명</span></div>
+      <ul class="tlist">${g.map(p => `<li><button class="tname ${T.pvSel === p ? 'sel' : ''}" data-act="pvsel" data-p="${p}">${esc(D.name(p))}</button></li>`).join('') || '<li class="muted">비어 있어요</li>'}</ul>
+      <div class="tact">${T.pvSel && !g.includes(T.pvSel) ? `<button class="btn gold sm" data-act="pvmove" data-g="${gi}">여기로</button>` : ''}</div>
+    </div>`).join('')}</div></div>`;
+}
+
+function statsRows(D) {
+  const ids = new Set(D.students.map(([p]) => p).concat(Object.keys(D.stats)));
+  return [...ids].map(p => {
+    const s = D.stats[p] || {}, st = D.st[p], rid = D.where[p];
+    const c = s.correct || 0, w = s.wrong || 0;
+    return { name: (st && st.name) || s.name || '친구', group: rid ? (T.rooms[rid].name || '') : (st ? '모둠 없음' : '나감'),
+      correct: c, wrong: w, rate: c + w ? Math.round(c / (c + w) * 100) : null, plays: s.plays || 0, wins: s.wins || 0 };
+  }).sort((a, b) => a.group.localeCompare(b.group, 'ko', { numeric: true }) || a.name.localeCompare(b.name, 'ko'));
+}
+function statsHTML(D) {
+  const rows = statsRows(D);
+  return `<div class="tsec"><div class="tsech"><h2>학생별 기록 <small>${rows.length}명</small></h2></div>
+    <p class="muted">정답은 맞힌 문제 수, 오답은 틀린 답을 누른 횟수예요. 판 수와 1등은 끝까지 한 판만 세요.</p>
+    <div style="overflow-x:auto"><table class="ttable"><thead><tr><th>이름</th><th>모둠</th><th class="n">정답</th><th class="n">오답</th><th class="n">정답률</th><th class="n">판 수</th><th class="n">1등</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.group)}</td><td class="n">${r.correct}</td><td class="n">${r.wrong}</td>
+      <td class="n">${r.rate == null ? '-' : r.rate + '%'}</td><td class="n">${r.plays}</td><td class="n">${r.wins}</td></tr>`).join('') ||
+      '<tr><td colspan="7" class="muted">아직 기록이 없어요.</td></tr>'}</tbody></table></div></div>`;
+}
+function downloadCSV() {
+  const rows = statsRows(tData());
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const lines = [['이름', '모둠', '정답', '오답', '정답률(%)', '판 수', '1등'].map(q).join(',')]
+    .concat(rows.map(r => [r.name, r.group, r.correct, r.wrong, r.rate == null ? '' : r.rate, r.plays, r.wins].map(q).join(',')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const d = new Date(), ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `yummy-uno_${T.code}_${ymd}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- 모둠 만들기와 옮기기 ---------- */
+function addTo(up, rid, p, D, t) {
+  const s = D.st[p] || {};
+  up[`rooms/${rid}/players/${p}`] = { name: s.name || D.name(p), joinedAt: t, online: s.online !== false };
+  up[`classes/${T.code}/students/${p}/room`] = rid;
+  up[`classes/${T.code}/students/${p}/assignedAt`] = t;
+}
+function buildRoom(up, g, no, D, t) {
+  const rid = db.ref(`${ROOT}/rooms`).push().key;
+  const players = {};
+  g.forEach((p, i) => {
+    const s = D.st[p] || {};
+    players[p] = { name: s.name || D.name(p), joinedAt: t + i, online: s.online !== false };
+    up[`classes/${T.code}/students/${p}/room`] = rid;
+    up[`classes/${T.code}/students/${p}/assignedAt`] = t;
+  });
+  up[`rooms/${rid}`] = { name: `${no}모둠`, no, classCode: T.code, host: g[0] || '', status: 'waiting', createdAt: t, players };
+  return rid;
+}
+const nextNo = D => D.rooms.reduce((m, [, r]) => Math.max(m, r.no || 0), 0) + 1;
+
+function tAuto() {
+  const D = tData();
+  const pool = D.students.filter(([, s]) => s.online !== false).map(([p]) => p);
+  const groups = splitGroups(pool, D.set.size || 4);
+  if (!groups) { snack('접속한 학생이 3명 이상이어야 모둠을 만들 수 있어요.'); return; }
+  T.preview = { groups, skipped: D.students.length - pool.length, replace: D.rooms.length > 0 };
+  T.pvSel = null; T.sel = null; tRender();
+}
+async function tConfirmPreview() {
+  const D = tData(), P = T.preview;
+  if (!P) return;
+  if (P.replace && D.rooms.some(([, r]) => isPlaying(r)) &&
+      !confirm('게임 중인 모둠이 있어요. 모두 닫고 새 모둠으로 다시 만들까요?')) return;
+  const up = {}, now = Date.now();
+  if (P.replace) {
+    D.rooms.forEach(([rid]) => { up[`rooms/${rid}`] = null; });
+    D.students.forEach(([p]) => { up[`classes/${T.code}/students/${p}/room`] = null; });
+  }
+  let no = P.replace ? 1 : nextNo(D);
+  P.groups.forEach(g => buildRoom(up, g, no++, D, now));
+  try { await db.ref(ROOT).update(up); T.preview = null; T.pvSel = null; snack(`${P.groups.length}개 모둠을 만들었어요. 게임 시작을 눌러 주세요.`); }
+  catch (e) { dbErr(e); }
+  tRender();
+}
+async function tFill() {
+  const D = tData();
+  const pool = shuffle(D.free.filter(([, s]) => s.online !== false).map(([p]) => p));
+  if (!pool.length) { snack('넣을 학생이 없어요. (접속한 학생만 넣어요)'); return; }
+  const up = {}, now = Date.now(), size = D.set.size || 4;
+  const waits = D.rooms.filter(([, r]) => !isPlaying(r) && !isEnded(r)).map(([rid, r]) => ({ rid, n: activePlayers(r).length }));
+  let placed = 0, made = 0;
+  const fillTo = cap => {
+    let w;
+    while (pool.length && (w = waits.filter(x => x.n < cap).sort((a, b) => a.n - b.n)[0])) {
+      addTo(up, w.rid, pool.shift(), D, now + placed); w.n++; placed++;
+    }
+  };
+  fillTo(size);
+  if (pool.length >= MINP) {
+    const gs = splitGroups(pool.splice(0), size);
+    let no = nextNo(D);
+    gs.forEach(g => { buildRoom(up, g, no++, D, now); placed += g.length; made++; });
+  }
+  fillTo(MAXP);
+  const left = pool.length;
+  if (!placed) { snack('빈자리가 없어요. 학생이 3명 이상 모이면 새 모둠을 만들어요.'); return; }
+  try {
+    await db.ref(ROOT).update(up);
+    snack(`${placed}명을 넣었어요${made ? ` (새 모둠 ${made}개)` : ''}.${left ? ` ${left}명은 자리가 없어요.` : ''}`);
+  } catch (e) { dbErr(e); }
+}
+async function tNewRoom() {
+  const D = tData(), up = {};
+  buildRoom(up, [], nextNo(D), D, Date.now());
+  try { await db.ref(ROOT).update(up); } catch (e) { dbErr(e); }
+}
+function tRemoveFromRoom(rid, p) {
+  return db.ref(`${ROOT}/rooms/${rid}`).transaction(r => {
+    if (!r) return r;
+    const ps = r.players || {};
+    delete ps[p]; r.players = ps;
+    if (r.game && r.status === 'playing') {
+      norm(r.game); applyLeave(r.game, p);
+      if (r.game.over) r.status = 'ended';
+    }
+    if (r.host === p) { const f = activePlayers(r)[0]; r.host = f ? f[0] : ''; }
+    return r;
+  });
+}
+async function tMoveTo(rid) {
+  const p = T.sel, D = tData(), dst = T.rooms[rid];
+  if (!p || !dst) return;
+  if (isPlaying(dst) || isEnded(dst)) { snack('대기 중인 모둠으로만 옮길 수 있어요.'); return; }
+  if (activePlayers(dst).length >= MAXP) { snack('그 모둠은 꽉 찼어요. (최대 5명)'); return; }
+  const src = D.where[p];
+  if (src && isPlaying(T.rooms[src]) &&
+      !confirm(`${D.name(p)} 학생은 게임 중이에요. 이 판에서 빼고 옮길까요?`)) return;
+  try {
+    if (src) await tRemoveFromRoom(src, p);
+    const up = {};
+    addTo(up, rid, p, D, Date.now());
+    await db.ref(ROOT).update(up);
+    T.sel = null;
+  } catch (e) { dbErr(e); }
+  tRender();
+}
+async function tUnassign() {
+  const p = T.sel, D = tData(), src = D.where[p];
+  if (!p || !src) return;
+  if (isPlaying(T.rooms[src]) && !confirm(`${D.name(p)} 학생은 게임 중이에요. 이 판에서 뺄까요?`)) return;
+  try {
+    await tRemoveFromRoom(src, p);
+    await db.ref(`${classPath(T.code)}/students/${p}/room`).set(null);
+    T.sel = null;
+  } catch (e) { dbErr(e); }
+  tRender();
+}
+async function tKick() {
+  const p = T.sel, D = tData();
+  if (!p) return;
+  if (!confirm(`${D.name(p)} 학생을 반에서 내보낼까요? (기록은 남아요)`)) return;
+  try {
+    if (D.where[p]) await tRemoveFromRoom(D.where[p], p);
+    await db.ref(`${classPath(T.code)}/students/${p}`).remove();
+    T.sel = null;
+  } catch (e) { dbErr(e); }
+  tRender();
+}
+
+/* ---------- 모둠 진행 ---------- */
+function tStart(rid, quiet) {
+  return db.ref(`${ROOT}/rooms/${rid}`).transaction(r => {
+    if (!r || isPlaying(r)) return;
+    const ps = activePlayers(r).filter(([, p]) => p.online !== false);
+    if (ps.length < MINP) return;
+    r.status = 'playing';
+    r.game = newGame(ps.slice(0, MAXP).map(([id, p]) => ({ id, name: p.name })));
+    return r;
+  }).then(res => {
+    if (!res.committed && !quiet) snack(`${(T.rooms[rid] || {}).name || '모둠'}: 접속한 학생이 3명 이상이어야 시작해요.`);
+    return res.committed;
+  }).catch(e => { dbErr(e); return false; });
+}
+async function tStartAll() {
+  const ids = tData().rooms.filter(([, r]) => !isPlaying(r) && !isEnded(r)).map(([rid]) => rid);
+  const ok = await Promise.all(ids.map(rid => tStart(rid, true)));
+  const n = ok.filter(Boolean).length;
+  snack(n === ids.length ? `${n}개 모둠 게임을 시작했어요.` : `${n}개 모둠 시작 · ${ids.length - n}개는 접속한 학생이 3명보다 적어요.`);
+}
+function tSkip(rid) {
+  return db.ref(`${ROOT}/rooms/${rid}/game`).transaction(g => {
+    if (!g) return g;
+    norm(g);
+    if (applyHostSkip(g) === false) return;
+    g.msg = `선생님이 ${nm(g, g.order[mod(g.turn - g.dir, g.order.length)])} 차례를 넘겼어요`;
+    g.fx = { k: 'draw', text: g.msg, by: null, card: null };
+    return g;
+  }).catch(dbErr);
+}
+function tAgain(rid) {
+  const r = T.rooms[rid];
+  if (!r) return Promise.resolve();
+  if (isPlaying(r) && !confirm(`${r.name}은 게임 중이에요. 이 판을 끝내고 대기실로 보낼까요?`)) return Promise.resolve();
+  return db.ref(`${ROOT}/rooms/${rid}`).update({ status: 'waiting', game: null }).catch(dbErr);
+}
+async function tAgainAll() {
+  const ids = tData().rooms.filter(([, r]) => isEnded(r)).map(([rid]) => rid);
+  await Promise.all(ids.map(rid => db.ref(`${ROOT}/rooms/${rid}`).update({ status: 'waiting', game: null })));
+  snack(`${ids.length}개 모둠을 대기실로 보냈어요.`);
+}
+async function tClose(rid) {
+  const r = T.rooms[rid];
+  if (!r) return;
+  if (!confirm(`${r.name}을 닫을까요? 모둠 학생들은 ‘모둠 없는 학생’으로 돌아가요.`)) return;
+  const up = { [`rooms/${rid}`]: null };
+  Object.keys(r.players || {}).forEach(p => { if ((T.cls.students || {})[p]) up[`classes/${T.code}/students/${p}/room`] = null; });
+  try { await db.ref(ROOT).update(up); } catch (e) { dbErr(e); }
+}
+async function tEndClass() {
+  if (!confirm('수업을 끝낼까요? 모든 모둠이 닫히고 학생들은 첫 화면으로 돌아가요.\n기록이 필요하면 먼저 ‘기록 내려받기’를 눌러 주세요.')) return;
+  const up = { [`classes/${T.code}`]: null };
+  Object.keys(T.rooms).forEach(rid => { up[`rooms/${rid}`] = null; });
+  try {
+    await db.ref(ROOT).update(up);
+    ls.set('yu_tclass', '');
+    tDetach(); tStartView();
+    snack('수업을 끝냈어요.');
+  } catch (e) { dbErr(e); }
+}
+
+/* ---------- 선생님 화면 버튼 ---------- */
+function tClick(e) {
+  const b = e.target.closest('[data-act]');
+  if (!b || b.tagName === 'INPUT' || b.disabled) return;
+  const a = b.dataset.act, rid = b.dataset.r, p = b.dataset.p;
+  switch (a) {
+    case 'pin':
+      if (($('tPin').value || '') === String(TEACHER_PIN)) { ss.set('yu_tok', '1'); teacherOpen(); }
+      else { snack('비밀번호가 달라요.'); $('tPin').select(); }
+      break;
+    case 'exit': tExit(); break;
+    case 'newclass': createClass(); break;
+    case 'opencode': {
+      const c = ($('tOpenCode').value || '').replace(/\D/g, '');
+      if (c.length !== 4) snack('반 코드는 숫자 4개예요.'); else openDash(c);
+      break;
+    }
+    case 'view': T.view = T.view === 'stats' ? 'rooms' : 'stats'; tRender(); break;
+    case 'csv': downloadCSV(); break;
+    case 'endclass': tEndClass(); break;
+    case 'size': T.cref.child('settings/size').set(+b.dataset.n).catch(dbErr); break;
+    case 'auto': tAuto(); break;
+    case 'reshuffle': tAuto(); break;
+    case 'pvcancel': T.preview = null; T.pvSel = null; tRender(); break;
+    case 'pvok': tConfirmPreview(); break;
+    case 'pvsel': T.pvSel = T.pvSel === p ? null : p; tRender(); break;
+    case 'pvmove': {
+      const gs = T.preview.groups, to = +b.dataset.g;
+      gs.forEach(g => { const i = g.indexOf(T.pvSel); if (i >= 0) g.splice(i, 1); });
+      gs[to].push(T.pvSel);
+      T.preview.groups = gs.filter(g => g.length);
+      T.pvSel = null; tRender();
+      break;
+    }
+    case 'fill': tFill(); break;
+    case 'newroom': tNewRoom(); break;
+    case 'sel': T.sel = T.sel === p ? null : p; tRender(); break;
+    case 'unsel': T.sel = null; tRender(); break;
+    case 'move': tMoveTo(rid); break;
+    case 'unassign': tUnassign(); break;
+    case 'kick': tKick(); break;
+    case 'start': tStart(rid); break;
+    case 'startall': tStartAll(); break;
+    case 'skip': tSkip(rid); break;
+    case 'again': tAgain(rid); break;
+    case 'againall': tAgainAll(); break;
+    case 'close': tClose(rid); break;
+  }
+}
+function tChange(e) {
+  const b = e.target.closest('input[data-act]');
+  if (!b || !T.cref) return;
+  if (b.dataset.act === 'selfStart' || b.dataset.act === 'quiz') T.cref.child('settings/' + b.dataset.act).set(b.checked).catch(dbErr);
+}
+
+function classInitUI() {
+  $('btnClassJoin').onclick = joinClass;
+  $('inClass').addEventListener('keydown', e => { if (e.key === 'Enter') joinClass(); });
+  $('inClass').addEventListener('input', () => { $('inClass').value = $('inClass').value.replace(/\D/g, '').slice(0, 4); });
+  $('btnLeaveC').onclick = () => { if (confirm('반에서 나갈까요?')) leaveClass(); };
+  $('btnTeacher').onclick = teacherOpen;
+  $('tMain').addEventListener('click', tClick);
+  $('tMain').addEventListener('change', tChange);
+  $('tMain').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (e.target.id === 'tPin') tClick({ target: $('tMain').querySelector('[data-act="pin"]') });
+    if (e.target.id === 'tOpenCode') tClick({ target: $('tMain').querySelector('[data-act="opencode"]') });
+  });
 }
 
 window.addEventListener('load', boot);

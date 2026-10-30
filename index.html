@@ -137,7 +137,7 @@ input::placeholder{color:#7F8BB0}
 .sp b{font-family:var(--display);font-weight:400;font-size:16px;display:block}
 
 /* ---------- game ---------- */
-.game{flex:1;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);min-height:0;width:100%;max-width:1100px;margin:0 auto}
+.game{flex:1;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);min-height:0;width:100%;max-width:1100px;margin:0 auto}
 .gbar{display:flex;align-items:center;gap:8px;padding:8px 12px}
 .gtitle{flex:1;text-align:center;font-family:var(--display);font-size:18px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .strip{padding:2px 8px 6px}
@@ -253,6 +253,68 @@ input::placeholder{color:#7F8BB0}
 .setup pre{background:rgba(0,0,0,.3);padding:12px;border-radius:12px;overflow:auto;font-size:13px}
 .setup ol li{margin-bottom:8px}
 
+/* 둘러앉은 자리 */
+.arena{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.6fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:4px;padding:0 8px;min-height:0}
+.oppTop{grid-column:1/4;grid-row:1;display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+#oppLeft{grid-column:1;grid-row:2} #oppRight{grid-column:3;grid-row:2}
+.oppSide{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;min-width:0}
+.arena .table{grid-column:2;grid-row:2;position:relative}
+.arena .table > *:not(.ring){position:relative;z-index:1}
+.ring{position:absolute;inset:0 2%;z-index:0;pointer-events:none}
+.ring svg{width:100%;height:100%;overflow:visible}
+.ring .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:14}
+.ring .flow{fill:none;stroke:rgba(255,197,49,.55);stroke-width:4;stroke-dasharray:10 16;stroke-linecap:round}
+.ring .flow.cw{animation:flowcw 5s linear infinite}
+.ring .flow.ccw{animation:flowccw 5s linear infinite}
+@keyframes flowcw{to{stroke-dashoffset:-260}}
+@keyframes flowccw{to{stroke-dashoffset:260}}
+.ring .ah{fill:var(--gold);stroke:var(--night);stroke-width:1.5}
+.ring.flip{animation:ringflip .9s ease}
+@keyframes ringflip{0%{opacity:.2;transform:scale(.9)}40%{opacity:1;transform:scale(1.06)}100%{transform:none}}
+.dir{display:inline-block;font-family:var(--display);color:var(--gold);font-size:15px;background:rgba(10,16,36,.65);padding:4px 14px;border-radius:999px;margin-bottom:2px}
+.dir.flip{animation:pulse .5s ease 3}
+.opp{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 8px;border-radius:14px;background:rgba(255,255,255,.06);border:2px solid transparent;min-width:0;max-width:100%;transition:background .2s}
+.opp.cur{border-color:var(--gold);background:rgba(255,197,49,.18);box-shadow:0 0 0 4px rgba(255,197,49,.14)}
+.opp.cur .onm{color:var(--gold)}
+.opp.out{opacity:.4;filter:grayscale(.8)}
+.opp.off{opacity:.6}
+.opp.danger{border-color:var(--tomato);background:rgba(232,71,60,.16)}
+.otags{display:flex;gap:4px;min-height:19px;flex-wrap:wrap;justify-content:center}
+.opp .tag{font-size:11px;line-height:1;padding:4px 7px;border-radius:999px;background:var(--gold);color:var(--night);font-weight:700;white-space:nowrap}
+.opp .tag.uno{background:var(--tomato);color:#fff}
+.opp .tag.miss{background:#fff;color:var(--tomato);animation:pulse .9s ease-in-out infinite}
+.opp .tag.nexttag{background:rgba(255,255,255,.85);color:var(--night)}
+.opp .tag.outtag{background:#555;color:#fff}
+.ofan{display:flex;justify-content:center;align-items:flex-end;padding:4px 6px 2px;--mb:24px;max-width:100%;overflow:hidden}
+.oppSide .ofan{--mb:20px}
+.mback{display:block;flex:none;width:var(--mb);aspect-ratio:5/7;border-radius:4px;border:2px solid #fff;
+  background:radial-gradient(ellipse 44% 60% at 50% 50%,var(--tomato) 0 97%,transparent 100%),var(--deep);box-shadow:0 2px 5px rgba(0,0,0,.45)}
+.mback+.mback{margin-left:calc(var(--mb) * -0.58)}
+.oempty{font-size:12px;color:var(--mute);padding:6px 0}
+.oinfo{display:flex;gap:6px;align-items:baseline;justify-content:center;max-width:100%}
+.onm{font-family:var(--display);font-size:16px;max-width:6.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ocnt{font-size:13px;color:var(--mute);white-space:nowrap}
+.ocnt b{font-family:var(--display);font-weight:400;font-size:20px;color:var(--paper)}
+.ocnt small{opacity:.6;font-size:11px}
+.metag{font-family:var(--display);font-size:15px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.08);align-self:center}
+.metag.cur{background:var(--gold);color:var(--night)}
+.metag .nexttag{font-size:12px;margin-left:4px;color:var(--gold)}
+@media (max-width:600px){
+  :root{--pw:clamp(58px,18vw,92px)}
+  .piles{gap:8px}
+  .food-now{min-width:68px;padding:8px 6px}
+  .food-now .fe{font-size:26px}
+  .food-now .fen{font-size:15px}
+  .arena{grid-template-columns:minmax(0,1fr) minmax(0,2.3fr) minmax(0,1fr);padding:0 4px}
+  .opp{padding:4px 4px}
+  .onm{font-size:13px;max-width:4.6em}
+  .oppTop{gap:5px;flex-wrap:nowrap}
+  .oppTop .opp{flex:1 1 0;min-width:0}
+  .oppTop .ofan{--mb:15px}
+  .ocnt b{font-size:17px}
+  .oppTop .oinfo{flex-direction:column;align-items:center;gap:0}
+  .oppTop .onm{max-width:100%}
+}
 @media (max-height:640px) and (orientation:landscape){
   :root{--pw:clamp(64px,10vw,104px);--hw:clamp(50px,8vw,80px)}
   .table{flex-direction:row;gap:18px}
@@ -466,11 +528,12 @@ body.has-rank #scr-wait .wrap,body.has-rank #scr-classwait .wrap{padding-top:64p
       <button class="btn ghost sm" data-rules>규칙</button>
       <button class="btn ghost sm" id="btnLeaveG">나가기</button>
     </div>
-    <div class="strip">
+    <div class="arena">
+      <div class="oppTop" id="oppTop"></div>
+      <div class="oppSide" id="oppLeft"></div>
+      <div class="table">
+      <div class="ring" id="ring" aria-hidden="true"><svg viewBox="0 0 200 200" preserveAspectRatio="none" id="ringSvg"></svg></div>
       <div class="dir" id="dirInd"></div>
-      <div class="players" id="players"></div>
-    </div>
-    <div class="table">
       <div class="piles">
         <button class="pile deck" id="deck" aria-label="카드 뽑기"></button>
         <div class="pile" id="discard"></div>
@@ -481,9 +544,12 @@ body.has-rank #scr-wait .wrap,body.has-rank #scr-classwait .wrap{padding-top:64p
         <div class="msg" id="msg"></div>
         <div style="text-align:center"><button class="btn ghost sm hostskip hidden" id="btnHostSkip"></button></div>
       </div>
+      </div>
+      <div class="oppSide" id="oppRight"></div>
     </div>
     <div class="mybar">
       <div class="actions">
+        <span class="metag" id="meTag"></span>
         <button class="btn" id="btnDraw">카드 뽑기</button>
         <button class="btn" id="btnPass">넘기기</button>
         <button class="btn red uno" id="btnUno">UNO!</button>
@@ -1126,6 +1192,7 @@ function bindUI() {
   $('btnRulesClose').onclick = () => $('rulesOv').classList.add('hidden');
   $('rulesOv').onclick = e => { if (e.target.id === 'rulesOv') $('rulesOv').classList.add('hidden'); };
   window.addEventListener('resize', fitHand);
+  window.addEventListener('resize', () => { if (room && room.game && $('scr-game').classList.contains('on')) renderSeats(norm(JSON.parse(JSON.stringify(room.game))), room); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { $('rulesOv').classList.add('hidden'); $('chooser').classList.add('hidden'); pending = null; quizClose(); }
   });
@@ -1226,7 +1293,7 @@ function enterRoom(rid) {
   if (P.on) stopPractice(true);
   clearTimeout(autoPT); P.optOut = false;
   if (roomRef) roomRef.off();
-  curRoom = rid; room = null; lastSeq = null; lastPres = null; lastTop = null; unoArmed = false;
+  curRoom = rid; room = null; lastSeq = null; lastPres = null; lastTop = null; lastDir = null; unoArmed = false;
   ss.set('yu_room', rid);
   roomRef = db.ref(roomPath(rid));
   roomRef.on('value', onRoom, dbErr);
@@ -1436,6 +1503,59 @@ function sortKey(c) {
   return FK.indexOf(c[0]) * 100 + SYM_RANK(c.slice(1));
 }
 
+// 친구들을 진행 방향 순서로 왼쪽 → 위 → 오른쪽에 앉히고, 가운데 고리로 방향을 보여 준다
+let lastDir = null;
+function renderSeats(g, r) {
+  const seats = g.seats, i = seats.indexOf(PID);
+  const others = i >= 0 ? seats.slice(i + 1).concat(seats.slice(0, i)) : seats.slice();
+  const n = others.length;
+  // 폰 세로 화면은 좁아서 모두 위쪽 한 줄에(진행 순서대로 왼쪽 → 오른쪽), 넓은 화면은 왼쪽·위·오른쪽에 둘러앉기
+  const narrow = window.innerWidth < 600;
+  const pos = narrow || n === 1 ? others.map(() => 'top') : n === 2 ? ['left', 'right'] : n === 3 ? ['left', 'top', 'right']
+    : n === 4 ? ['left', 'top', 'top', 'right'] : others.map(() => 'top');
+  const box = { left: [], top: [], right: [] };
+  others.forEach((p, k) => box[pos[k]].push(oppHTML(g, r, p, pos[k])));
+  $('oppLeft').innerHTML = box.left.join('');
+  $('oppTop').innerHTML = box.top.join('');
+  $('oppRight').innerHTML = box.right.join('');
+  if (g.dir !== lastDir) {
+    renderRing(g.dir);
+    $('dirInd').textContent = g.dir === 1 ? '↻ 시계 방향으로 돌아요' : '↺ 반대 방향으로 돌아요';
+    if (lastDir !== null) ['ring', 'dirInd'].forEach(id => { const el = $(id); el.classList.remove('flip'); void el.offsetWidth; el.classList.add('flip'); });
+    lastDir = g.dir;
+  }
+}
+function oppHTML(g, r, p, pos) {
+  const out = g.out.indexOf(p) >= 0, gone = !out && g.order.indexOf(p) < 0;
+  const cnt = (g.hands[p] || []).length, cur = g.order[g.turn];
+  const isCur = p === cur && !g.over;
+  const isNext = !g.over && !isCur && g.order.length > 1 && g.order[mod(g.turn + g.dir, g.order.length)] === p;
+  const pl = (r.players || {})[p];
+  const off = !out && !gone && !r.practice && (!pl || pl.online === false);
+  const mercy = isMercy(g), danger = mercy && !out && !gone && cnt >= 18;
+  const miss = unoMissOf(g);
+  const show = Math.min(cnt, window.innerWidth < 600 ? 8 : pos === 'top' ? 12 : 7);
+  const mid = (show - 1) / 2;
+  const backs = Array.from({ length: show }, (_, k) =>
+    `<i class="mback" style="transform:rotate(${((k - mid) * 4).toFixed(1)}deg) translateY(${(Math.abs(k - mid) * 1.1).toFixed(1)}px)"></i>`).join('');
+  return `<div class="opp ${pos} ${isCur ? 'cur' : ''} ${out || gone ? 'out' : ''} ${off ? 'off' : ''} ${danger ? 'danger' : ''}">
+    <div class="otags">${isCur ? '<span class="tag">차례</span>' : ''}${isNext ? '<span class="tag nexttag">다음</span>' : ''}${out ? '<span class="tag outtag">탈락</span>' : ''}${!out && cnt === 1 ? (p === miss ? '<span class="tag uno miss">UNO 안 함!</span>' : '<span class="tag uno">UNO</span>') : ''}</div>
+    <div class="ofan">${backs || `<span class="oempty">${out ? '탈락' : gone ? '나감' : '카드 없음'}</span>`}</div>
+    <div class="oinfo"><span class="onm">${esc(nm(g, p))}</span><span class="ocnt">${out ? `${g.outCnt[p] || OUT_AT}장 탈락` : gone ? '나감' : `<b>${cnt}</b>장${mercy ? '<small>/25</small>' : ''}`}${off ? ' · 끊김' : ''}</span></div></div>`;
+}
+function renderRing(dir) {
+  const cw = dir === 1, R = 88, pts = [];
+  [270, 90].forEach(deg => {
+    const t = deg * Math.PI / 180, cx = 100 + R * Math.cos(t), cy = 100 + R * Math.sin(t);
+    const tx = (cw ? -1 : 1) * Math.sin(t), ty = (cw ? 1 : -1) * Math.cos(t);      // 진행 방향(접선)
+    const nx = Math.cos(t), ny = Math.sin(t);                                        // 바깥쪽
+    const tip = [cx + tx * 12, cy + ty * 12], b1 = [cx - tx * 7 + nx * 8, cy - ty * 7 + ny * 8], b2 = [cx - tx * 7 - nx * 8, cy - ty * 7 - ny * 8];
+    pts.push(`<polygon class="ah" points="${tip.join(',')} ${b1.join(',')} ${b2.join(',')}"/>`);
+  });
+  $('ringSvg').innerHTML = `<circle class="track" cx="100" cy="100" r="${R}" vector-effect="non-scaling-stroke"/>
+    <circle class="flow ${cw ? 'cw' : 'ccw'}" cx="100" cy="100" r="${R}" vector-effect="non-scaling-stroke"/>${pts.join('')}`;
+}
+
 function renderGame(r) {
   show('game');
   const g = norm(r.game);
@@ -1447,8 +1567,8 @@ function renderGame(r) {
   const mercy = isMercy(g);
 
   $('gTitle').textContent = `${r.name} · ${MODES[g.mode].name}`;
-  $('dirInd').textContent = g.dir === 1 ? '순서 방향 ▶' : '◀ 순서가 반대로 돌아요';
-  $('players').innerHTML = g.seats.map(p => {
+  renderSeats(g, r);
+  const _unusedChips = g.seats.map(p => {
     const out = g.out.indexOf(p) >= 0, gone = !out && g.order.indexOf(p) < 0;
     const cnt = (g.hands[p] || []).length;
     const pl = (r.players || {})[p];
@@ -1462,6 +1582,9 @@ function renderGame(r) {
   }).join(`<span class="arrow" aria-hidden="true">${g.dir === 1 ? '›' : '‹'}</span>`);
 
   const canDraw = myTurn && g.drawn !== PID;
+  const nextP = !g.over && g.order.length ? g.order[mod(g.turn + g.dir, g.order.length)] : null;
+  $('meTag').className = 'metag' + (myTurn ? ' cur' : '');
+  $('meTag').innerHTML = amOut ? '나 · 탈락' : `나 · ${hand.length}장${mercy ? '/25' : ''}${!myTurn && nextP === PID ? '<span class="nexttag">곧 내 차례</span>' : ''}`;
   $('deck').innerHTML = backHTML() + `<span class="cnt">남은 카드 ${g.deck.length}</span>`;
   $('deck').classList.toggle('can', canDraw);
   $('deck').disabled = !canDraw;
@@ -2366,7 +2489,7 @@ function startPractice(opts) {
   bots.forEach(b => { players[b.id] = { name: b.name, online: true }; });
   P.room = { name: 'AI 연습', practice: true, host: PID, status: 'playing', players,
     game: newGame([{ id: PID, name: myN }].concat(bots), P.mode) };
-  room = P.room; lastSeq = null; lastTop = null; unoArmed = false; pending = null;
+  room = P.room; lastSeq = null; lastTop = null; lastDir = null; unoArmed = false; pending = null;
   ['endOv', 'chooser', 'target'].forEach(id => $(id).classList.add('hidden'));
   if (curClass && db) db.ref(`${classPath(curClass)}/students/${PID}/practice`).set(true).catch(() => {});
   renderGame(room);

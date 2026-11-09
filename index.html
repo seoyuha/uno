@@ -434,6 +434,28 @@ body.has-rank #scr-wait .wrap,body.has-rank #scr-classwait .wrap{padding-top:64p
 .fbtn .fe .ficon{width:44px;height:44px}
 .seat .si .ficon{width:1.4em;height:1.4em}
 .tname.ai{display:inline-block;padding:4px 8px;opacity:.85;font-family:var(--display)}
+
+.pauseov{z-index:80;background:rgba(8,12,28,.82);backdrop-filter:blur(3px)}
+.pauseov .sheet{text-align:center;max-width:460px}
+.pz-ic{font-size:54px;line-height:1;margin-bottom:6px}
+.pauseov h2{margin:4px 0 6px}
+.pz-sub{color:var(--mute);margin:0 0 16px}
+.pz-h{font-family:var(--display);font-size:18px;color:var(--gold);margin-bottom:8px}
+.pz-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;text-align:left}
+.pz-list li{display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,.07)}
+.pz-list li b{font-family:var(--display);color:var(--gold);min-width:42px}
+.pz-list li span{flex:1}
+.pz-list li em{font-style:normal;font-family:var(--display)}
+.pz-list li.me{background:var(--gold);color:var(--night)}
+.pz-list li.me b{color:var(--night)}
+.pz-me{margin-top:10px;font-family:var(--display)}
+.pausebtn{background:#3a4a7a;color:#fff}
+.tpaused{margin:10px 0 4px;padding:12px 16px;border-radius:14px;background:rgba(255,197,49,.16);border:2px solid var(--gold);color:var(--paper)}
+
+.tclock{margin:6px auto 0;width:max-content;padding:5px 14px;border-radius:999px;background:rgba(0,0,0,.35);color:var(--paper);font-family:var(--display);font-size:15px}
+.tclock b{font-size:20px;margin:0 2px}
+.tclock.mine{background:var(--gold);color:var(--night)}
+.tclock.hurry{background:var(--tomato);color:#fff;animation:pulse .8s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -538,6 +560,7 @@ body.has-rank #scr-wait .wrap,body.has-rank #scr-classwait .wrap{padding-top:64p
       <div class="table">
       <div class="ring" id="ring" aria-hidden="true"><svg viewBox="0 0 200 200" preserveAspectRatio="none" id="ringSvg"></svg></div>
       <div class="dir" id="dirInd"></div>
+      <div class="tclock hidden" id="turnClock" aria-live="off"></div>
       <div class="piles">
         <button class="pile deck" id="deck" aria-label="카드 뽑기"></button>
         <div class="pile" id="discard"></div>
@@ -601,6 +624,14 @@ body.has-rank #scr-wait .wrap,body.has-rank #scr-classwait .wrap{padding-top:64p
  <button class="btn ghost sm" id="quizCancel" style="width:100%;margin-top:12px">취소</button></div>
 </div>
 <div id="myRank" class="myrank hidden" aria-live="polite"></div>
+<div class="ov hidden pauseov" id="pauseOv" role="dialog" aria-modal="true" aria-labelledby="pzTitle">
+  <div class="sheet">
+    <div class="pz-ic" aria-hidden="true">⏸</div>
+    <h2 id="pzTitle">선생님이 게임을 멈췄어요</h2>
+    <p class="pz-sub">잠깐 선생님 말씀을 들어요. 다시 시작하면 하던 게임이 그대로 이어져요.</p>
+    <div id="pauseRank"></div>
+  </div>
+</div>
 <div id="fx"></div>
 <div id="snack"></div>
 
@@ -610,7 +641,9 @@ Object.assign(CARD, {"W6": "data:image/webp;base64,UklGRnAeAABXRUJQVlA4IGQeAADwa
 </script>
 <script>
 /* ===== 게임 규칙 (순수 함수) ===== */
-const MAXP = 5, MINP = 3, HAND = 7, OUT_AT = 25;
+const MAXP = 5, MINP = 3, HAND = 7, OUT_AT = 25, TURN_SEC = 20;
+let SRV_OFF = 0;
+const nowMs = () => Date.now() + SRV_OFF;
 const FOODS = {
   S: { en: 'Steak',     ko: '스테이크', emo: '🥩', c: '#E8473C' },
   P: { en: 'Spaghetti', ko: '스파게티', emo: '🍝', c: '#F2B705' },
@@ -714,7 +747,7 @@ function drawN(g, p, n) {
 function advance(g, steps) {
   g.turn = mod(g.turn + g.dir * steps, g.order.length);
   g.drawn = null;
-  g.turnAt = Date.now();
+  g.turnAt = nowMs();
 }
 
 function setFx(g, k, text, by, card) {
@@ -739,7 +772,7 @@ function eliminate(g, p) {
   else if (i === g.turn) {
     if (g.dir === -1) g.turn--;
     g.drawn = null;
-    g.turnAt = Date.now();
+    g.turnAt = nowMs();
   }
   g.turn = mod(g.turn, n);
 }
@@ -769,7 +802,7 @@ function newGame(players, mode) { // players: [{id,name}]
   while (!isNum(first)) { deck.unshift(first); first = deck.pop(); }
   const g = {
     mode, order, seats: order.slice(), out: [], outCnt: {}, names, hands, deck, discard: [first], food: foodOf(first),
-    dir: 1, turn: 0, drawn: null, stack: 0, stackMin: 0, turnAt: Date.now(), over: false,
+    dir: 1, turn: 0, drawn: null, stack: 0, stackMin: 0, turnAt: nowMs(), over: false,
     winner: null, endReason: null, seq: 0, fx: null, msg: '', unoMiss: null
   };
   setFx(g, 'start', `${MODES[mode].name} 게임 시작! 첫 차례는 ${nm(g, order[0])}`, null, first);
@@ -848,7 +881,7 @@ function applyPlay(g, me, code, idx, chosen, saidUno, target) {
     drawN(g, nextP, 4); text = `${say} ${nm(g, nextP)} +4장`; k = 'draw4'; advance(g, 2);
   } else if (sym === 'A') {
     text = `${name}: 모두 건너뛰기! 한 번 더 내 차례`; k = 'skip';
-    g.drawn = null; g.turnAt = Date.now();
+    g.drawn = null; g.turnAt = nowMs();
   } else if (sym === 'D') {
     text = `${name}: 전부 버리기! ${FOODS[g.food].ko} 카드 ${dumped + 1}장을 한꺼번에`; k = 'rotate'; advance(g, 1);
   } else if (seven) {
@@ -965,7 +998,7 @@ function applyLeave(g, me) {
     else if (i === g.turn) {
       if (g.dir === -1) g.turn--;
       g.drawn = null;
-      g.turnAt = Date.now();
+      g.turnAt = nowMs();
     }
     g.turn = mod(g.turn, n);
   }
@@ -1090,6 +1123,7 @@ function rulesHTML() {
   const sp = list => `<div class="sgrid">${list.map(s => `<div class="sp"><img src="${CARD[s[0]]}" alt=""><div><b>${s[1]}</b>${s[2]}</div></div>`).join('')}</div>`;
   return `<h2>게임 방법</h2>
   <ul>
+    <li><b>한 사람당 20초!</b> 시간 안에 카드를 내거나 뽑아요. 20초가 지나면 1장(쌓인 벌칙이 있으면 그 장수)을 받고 다음 친구에게 넘어가요.</li>
     <li>3~5명이 한 방에서 해요. 처음에 카드를 ${HAND}장씩 받아요.</li>
     <li>가운데 카드와 <b>같은 음식</b>이나 <b>같은 숫자</b>를 한 장 내요. 카드를 내거나 뽑기 전에 영어 문제를 맞혀요.</li>
     <li>낼 카드가 없으면 카드를 1장 뽑아요. 뽑은 카드를 낼 수 있으면 내고, 아니면 넘겨요.</li>
@@ -1162,6 +1196,7 @@ function boot() {
   try {
     firebase.initializeApp(cfg);
     db = firebase.database();
+    try { db.ref('.info/serverTimeOffset').on('value', sn => { SRV_OFF = sn.val() || 0; }); } catch (e) {}
   } catch (e) {
     $('setupWhy').textContent = 'Firebase 설정에 문제가 있어요: ' + e.message;
     show('setup'); return;
@@ -1724,7 +1759,7 @@ function updateHostSkip() {
   const order = A(g.order);
   const cur = order[g.turn];
   const pl = (room.players || {})[cur];
-  const stuck = !pl || pl.online === false || (Date.now() - (g.turnAt || Date.now()) > 45000);
+  const stuck = !pl || pl.online === false || (nowMs() - (g.turnAt || nowMs()) > 45000);
   const showIt = room.host === PID && !g.over && cur !== PID && stuck;
   b.classList.toggle('hidden', !showIt);
   if (showIt) b.textContent = `방장: ${(g.names || {})[cur] || '친구'} 차례 넘기기`;
@@ -1891,6 +1926,7 @@ function onClass(snap) {
   }
   cls = c;
   updateRankBadge();
+  applyPause();
   const me = (c.students || {})[PID];
   if (!me || !me.name) { snack('선생님이 반 명단에서 뺐어요.'); leaveClassView(); return; }
   if (me.online === false && connected) markOnline();
@@ -1905,7 +1941,35 @@ function onClass(snap) {
   else if (room && room.game && room.game.over) renderEnd(room, norm(room.game));
 }
 
+
+/* ---------- 선생님이 '모두 정지'를 누르면 ---------- */
+const isPaused = () => !!(curClass && cls && cls.paused);
+let wasPaused = false;
+function applyPause() {
+  const on = isPaused();
+  $('pauseOv').classList.toggle('hidden', !on);
+  if (on) {
+    try { quizClose(); } catch (e) {}
+    pending = null;
+    ['chooser', 'target'].forEach(id => $(id).classList.add('hidden'));
+    stopBots(); aiStop(); clearTimeout(autoPT);
+    const rows = rankList(cls.students, cls.stats);
+    const me = rows.find(x => x.p === PID);
+    const top = rows.slice(0, 5);
+    $('pauseRank').innerHTML = `<div class="pz-h">🏆 지금 우리 반 랭킹</div><ol class="pz-list">${top.map(x =>
+      `<li class="${x.p === PID ? 'me' : ''}"><b>${x.rank}등</b><span>${esc(x.name)}</span><em>${x.score}점</em></li>`).join('') || '<li class="muted">아직 기록이 없어요.</li>'}</ol>` +
+      (me && top.indexOf(me) < 0 ? `<div class="pz-me">나는 <b>${me.rank}등</b> · ${me.score}점</div>` : '');
+  } else if (wasPaused) {
+    // 다시 시작: 하던 게임을 이어서
+    if (P.on) { renderGame(P.room); botTick(); }
+    else if (room && room.game && room.status === 'playing') { renderGame(room); aiTick(room); }
+    else if (curClass && !curRoom) renderClassWait();
+  }
+  wasPaused = on;
+}
+
 function leaveClassView() {
+  $('pauseOv').classList.add('hidden'); wasPaused = false;
   if (P.on) stopPractice(true);
   clearTimeout(autoPT);
   if (curClass && db) db.ref(`${classPath(curClass)}/students/${PID}/online`).onDisconnect().cancel().catch(() => {});
@@ -2070,10 +2134,12 @@ function renderDash() {
     <div class="tbtns">
       <div class="tabs" role="tablist">${[['rooms', '모둠'], ['rank', '🏆 랭킹'], ['stats', '학생별 기록']].map(([v, l]) =>
         `<button class="${T.view === v ? 'on' : ''}" data-act="tab" data-v="${v}">${l}</button>`).join('')}</div>
+      ${D.c.paused ? '<button class="btn gold sm" data-act="resume">▶ 다시 시작</button>' : '<button class="btn sm pausebtn" data-act="pause">⏸ 모두 정지</button>'}
       <button class="btn ghost sm" data-act="csv">기록 내려받기</button>
       <button class="btn red sm" data-act="endclass">수업 끝내기</button>
       <button class="btn ghost sm" data-act="exit">닫기</button>
     </div></div>
+  ${D.c.paused ? `<div class="tpaused">⏸ 모든 게임이 멈춰 있어요. 학생 화면에는 랭킹이 떠 있고, 점수와 기록은 그대로예요. <b>다시 시작</b>을 누르면 하던 게임이 이어져요.</div>` : ''}
   <div class="tset">
     <div class="seg" role="group" aria-label="모둠 인원"><span>모둠 인원</span>${[3, 4, 5].map(n =>
       `<button class="${n === size ? 'on' : ''}" data-act="size" data-n="${n}">${n}명</button>`).join('')}</div>
@@ -2143,7 +2209,7 @@ function roomCard(rid, r, D) {
   const selFrom = T.sel ? D.where[T.sel] : null;
   const canHere = T.sel && selFrom !== rid && !playing && !ended && ps.length < MAXP;
   if (playing) {
-    const stuck = Date.now() - (g.turnAt || Date.now()) > 45000;
+    const stuck = nowMs() - (g.turnAt || nowMs()) > 45000;
     warn = stuck || !(r.players || {})[cur] || (r.players[cur] || {}).online === false;
     msg = warn ? `${esc(nameOf(cur))} 차례에서 멈춰 있어요` : esc(g.msg || '') + (g.stack ? ` · 쌓인 벌칙 +${g.stack}` : '');
     btns = `<button class="btn sm" data-act="skip" data-r="${rid}">차례 넘기기</button>
@@ -2325,6 +2391,7 @@ async function tStart(rid, quiet) {
   const r = T.rooms[rid];
   const label = (r && r.name) || '모둠';
   if (!r) return false;
+  if (T.cls && T.cls.paused) { if (!quiet) snack('지금은 모두 정지 중이에요. 다시 시작을 먼저 눌러 주세요.'); return false; }
   if (isPlaying(r)) { if (!quiet) snack(`${label}은 이미 게임 중이에요.`); return false; }
   const ps = activePlayers(r).filter(([, p]) => p.online !== false);
   if (!ps.some(([id]) => !isAI(id))) { if (!quiet) snack(`${label}: 접속한 학생이 없어요.`); return false; }
@@ -2373,6 +2440,20 @@ async function tClose(rid) {
   Object.keys(r.players || {}).forEach(p => { if ((T.cls.students || {})[p]) up[`classes/${T.code}/students/${p}/room`] = null; });
   try { await db.ref(ROOT).update(up); } catch (e) { dbErr(e); }
 }
+async function tPause() {
+  try {
+    await db.ref(classPath(T.code)).update({ paused: true, pausedAt: Date.now() });
+    T.view = 'rank'; tRender();
+    snack('모든 게임을 멈췄어요. 랭킹은 그대로예요.');
+  } catch (e) { dbErr(e); }
+}
+async function tResume() {
+  const up = { [`classes/${T.code}/paused`]: null, [`classes/${T.code}/pausedAt`]: null }, now = nowMs();
+  // 멈춰 있던 시간만큼 '차례에서 멈춰 있어요' 경고가 뜨지 않게
+  Object.entries(T.rooms).forEach(([rid, r]) => { if (isPlaying(r)) up[`rooms/${rid}/game/turnAt`] = now; });
+  T.poolSince = {};
+  try { await db.ref(ROOT).update(up); T.view = 'rooms'; tRender(); snack('게임을 다시 시작했어요.'); } catch (e) { dbErr(e); }
+}
 async function tEndClass() {
   if (!confirm('수업을 끝낼까요? 모든 모둠이 닫히고 학생들은 첫 화면으로 돌아가요.\n기록이 필요하면 먼저 ‘기록 내려받기’를 눌러 주세요.')) return;
   const up = { [`classes/${T.code}`]: null };
@@ -2407,6 +2488,8 @@ function tClick(e) {
     case 'unit': T.cref.child('settings/unit').set(b.dataset.v).catch(dbErr); break;
     case 'csv': downloadCSV(); break;
     case 'endclass': tEndClass(); break;
+    case 'pause': tPause(); break;
+    case 'resume': tResume(); break;
     case 'size': T.cref.child('settings/size').set(+b.dataset.n).catch(dbErr); break;
     case 'auto': tAuto(); break;
     case 'reshuffle': tAuto(); break;
@@ -2477,6 +2560,7 @@ function unitFor(r) {
 
 /* ---------- 게임 저장 (Firebase / 연습) ---------- */
 function gtx(fn) {
+  if (isPaused()) return Promise.resolve(null);
   if (P.on) return practiceTx(fn);
   if (busy || !roomRef) return Promise.resolve(null);
   busy = true;
@@ -2577,6 +2661,7 @@ function practiceTx(fn) {
 }
 function botTick() {
   stopBots();
+  if (isPaused()) return;
   const g = P.room && P.room.game;
   if (!P.on || !g || g.over) return;
   const cur = g.order[g.turn];
@@ -2642,7 +2727,7 @@ function renderClassWait(moving) {
 }
 function scheduleAutoPractice(moving) {
   clearTimeout(autoPT);
-  if (moving || !curClass || !cls || P.on || curRoom || P.optOut) return;
+  if (moving || !curClass || !cls || P.on || curRoom || P.optOut || isPaused()) return;
   if (!(cls.live && clsSet().automatch !== false)) return;
   autoPT = setTimeout(() => {
     if (curClass && !curRoom && !P.on && !P.optOut && $('scr-classwait').classList.contains('on')) startPractice({ auto: true });
@@ -2680,6 +2765,7 @@ function aiRun(fn, tries) {
   gtx(fn);
 }
 function aiTick(r) {
+  if (isPaused()) { aiStop(); return; }
   if (P.on || !r || !r.game || r.status !== 'playing') { aiStop(); return; }
   const g = norm(JSON.parse(JSON.stringify(r.game)));
   if (g.over || !g.order.some(isAI)) { aiStop(); return; }
@@ -2705,6 +2791,57 @@ function aiTick(r) {
   }
 }
 
+
+/* ---------- 한 사람당 20초 ---------- */
+function applyTimeout(g) {
+  const cur = g.order[g.turn];
+  if (applyHostSkip(g, '') === false) return false;
+  g.msg = `⏰ 시간 초과! ${nm(g, cur)} 차례가 넘어갔어요` + (g.msg.split('넘겼어요')[1] || '');
+  g.fx.text = g.msg;
+  return true;
+}
+const TC = { tried: null };
+function turnClockTick() {
+  const el = $('turnClock');
+  const r = room;
+  if (P.on || !r || !r.game || r.status !== 'playing' || !$('scr-game').classList.contains('on')) { el.classList.add('hidden'); return; }
+  const g = r.game;
+  if (g.over) { el.classList.add('hidden'); return; }
+  const order = Array.isArray(g.order) ? g.order : Object.values(g.order || {});
+  const cur = order[g.turn];
+  if (!cur || isAI(cur)) { el.classList.add('hidden'); return; }
+  const paused = isPaused();
+  const left = Math.max(0, Math.ceil(TURN_SEC - (nowMs() - (g.turnAt || nowMs())) / 1000));
+  const mine = cur === PID;
+  const who = mine ? '내 차례' : esc((g.names && g.names[cur]) || '친구');
+  el.innerHTML = paused ? '⏸ 멈춤' : `⏰ ${who} <b>${left}</b>초`;
+  el.classList.remove('hidden');
+  el.classList.toggle('mine', mine);
+  el.classList.toggle('hurry', !paused && left <= 5);
+  if (paused || left > 0) return;
+  // 시간이 다 됐어요: 내 차례면 내 기기가, 그 친구가 응답이 없으면 방의 첫 번째 학생 기기가 넘겨요
+  const late = (nowMs() - g.turnAt) / 1000 - TURN_SEC;
+  const ps = r.players || {};
+  const driver = Object.keys(ps).filter(p => !isAI(p) && ps[p] && ps[p].name && ps[p].online !== false)
+    .sort((a, b) => (ps[a].joinedAt || 0) - (ps[b].joinedAt || 0) || (a < b ? -1 : 1))[0];
+  if (!(mine || (driver === PID && late >= 2) || late >= 6)) return;
+  const key = g.seq + ':' + cur;
+  if (TC.tried === key) return;
+  TC.tried = key;
+  const seq = g.seq;
+  if (mine) {
+    try { quizClose(); } catch (e) {}
+    pending = null; ['chooser', 'target'].forEach(id => $(id).classList.add('hidden'));
+  }
+  const run = (k) => {
+    if (busy) { if (k < 10) setTimeout(() => run(k + 1), 300); return; }
+    gtx(gg => (gg.seq === seq && gg.order[gg.turn] === cur && nowMs() - gg.turnAt >= TURN_SEC * 1000 - 500) ? applyTimeout(gg) : false)
+      .then(res => { if (!res || !res.committed) TC.tried = null; });
+  };
+  run(0);
+}
+setInterval(turnClockTick, 400);
+
 /* ---------- 선생님: 끝난 학생 자동 매칭 ---------- */
 Object.assign(T, { poolSince: {}, endSeen: {}, lastRoomOf: {}, mBusy: false, mTimer: null });
 function groupCount(n, size) { return Math.min(Math.floor(n / MINP), Math.max(Math.ceil(n / MAXP), Math.round(n / size))); }
@@ -2721,7 +2858,7 @@ function mixGroups(pool, size) {
 async function matchTick() {
   if (!T.code || !T.cls || T.mBusy) return;
   const D = tData(), set = D.set;
-  if (set.automatch === false || !D.c.live) { T.poolSince = {}; return; }
+  if (set.automatch === false || !D.c.live || D.c.paused) { T.poolSince = {}; return; }
   const now = Date.now(), up = {};
   let changed = false;
   // 1) 끝난 모둠은 10초 뒤 해산 → 학생들은 대기(AI 연습)로
